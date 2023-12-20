@@ -1,0 +1,929 @@
+------------------------------- recursive function 1 to 10 --------------------------------
+with recursive numbers as(
+  select 1 as n
+	union
+	select n+1 from numbers where n<10)
+  
+select * from numbers;
+----------------------------------------------------------------------------------------------
+---------- 2nd highest salary of each department only one row from each department---------------------
+with dense_emp as (
+select *, dense_rank() over (partition by dept_id order by emp_salary desc) as drank from emp
+),
+row_emp as(
+select *, row_number() over (partition by dept_id order by emp_id) rnum from dense_emp where drank=2
+)
+select emp_name, dept_id, emp_salary from row_emp where rnum =1;
+
+-----------------------------------------------------------------------------------------------
+-----Write a SQL Query giving me consolidated result of all employees working for their respective department along with count of employees at department and percentage count out of total employee strength.
+drop table if exists emp;
+create table emp using csv options(path "dbfs:/FileStore/multi_file/employee.csv", header "true");
+drop table if exists dept;
+create table dept using csv options(path "dbfs:/FileStore/multi_file/department.csv", header "true");
+select * from emp;
+
+with new_emp as (
+  select *, count(emp_id) over () as total_emp from emp
+),
+emp_counts as(
+select d.dept_name, count(e.emp_name) as emp_count, collect_set(e.emp_name) as emp_names, first(e.total_emp) as total_emp 
+from new_emp e join dept d
+on e.dept_id=d.dept_id
+group by d.dept_name)
+
+select dept_name, emp_count, emp_names, emp_count/total_emp *100 as per_emp from emp_counts;
+
+---------------- Alitimetric question ------------------------------------------------------------
+Table: emp
+emp_id	emp_name	dept_id	emp_gender	emp_salary	emp_age
+7001	ABC	100	M	107773	30
+7002	DEF	101	M	122183	25
+7003	GHI	102	F	147458	26
+7004	JKL	103	F	140967	29
+7005	MNO	104	M	136789	28
+7006	PQR	100	F	143416	26
+7007	STU	101	M	138235	30
+7008	VWX	102	F	145933	30
+7009	YZA	103	M	106135	26
+7010	BCD	104	M	107928	29
+7011	EFG	100	M	137448	27
+
+Table: dept
+dept_id	dept_name	dept_region	mgr_id
+100	HR	India	7001
+101	IT	USA	7002
+102	Finance	UK	7003
+103	Audit	Australia	7004
+104	CSR	Canada	7005
+
+--1. Write a query that should return Employee Name and its Department Name.
+
+select e.emp_name, d.dept_name 
+from emp e left join dept d 
+on e.dept_id = d.dept_id;
+
+-- 2. Write a query that should return employee's name and its manager's name. Please note that if the employee is department's manager, then put N/A in place of manager's name.
+
+with emp_with_mgr as
+		(select e.emp_id, e.emp_name, d.mgr_id 
+         from emp e left join dept d 
+         on e.dept_id = d.dept_id),
+	emp_mgr as 
+        (select e.emp_id, e.emp_name, e.mgr_id, m.emp_name as mgr_name 
+         from emp_with_mgr e left join emp_with_mgr m 
+         on e.mgr_id = m.emp_id)
+        
+select emp_name, case 
+					when emp_id in(select mgr_id from dept) then 'N/A' 
+                    else mgr_name 
+                    end as mgr_name 
+              from emp_mgr; 
+
+-- 3. Write a query that should return department's name and total salary drawn by the department.
+
+select d.dept_name, sum(e.emp_salary) as dept_drawn_salary 
+	from emp e left join dept d 
+    on e.dept_id = d.dept_id 
+    group by d.dept_name; 
+	
+-- 4. Write a query to show which employee draws maximum salary in a department.
+
+select e.emp_name, d.dept_name, max(e.emp_salary) as emp_salary 
+	from emp e left join dept d 
+    on e.dept_id = d.dept_id 
+    group by d.dept_name; 
+
+------------------------- Inactive sum -------------------------------------------------------------
+Need to find the sum of sales for each employee. 
+We need to follow the following conditions while summing up.
+for inactive employees (IsActive=0) group the sum under Inactive name and rest under their respective names. 
+need to be done in a single select. 
+
+Sample Input:
+EmpName SaleAmount IsActive
+Pawan   2500       1
+Pawan   3000       1
+Avtaar  800        1
+Avtaar  1000       1
+Kishan  2800       1
+Kishan  3000       1
+Nimit   500        1
+Nimit   800        1
+Kavita  1000       0
+Lakshmi 1000       0
+Madhu   500        0
+Joyeeta 2500       0
+
+Sample Output:
+EmpName SaleAmount 
+Avtaar  1800   
+Inactive 5000
+Kishan   5800
+Nimit   1300
+Pawan   5500
+
+with new_tab as (SELECT *, (case when IsActive = 0 then 'Inactive' else EmpName end) as EmpName1 FROM SalesData)
+select EmpName1 as EmpName, cast(sum(SaleAmount) as int) as SaleAmount from new_tab group by EmpName1; 
+
+------------------------- Product ranking ----------------------------
+We need to provide rank. 
+The logic for the ranking is that whenever you have a value “Product” then 
+you must start the new number and all others below should follow the same rank. 
+Please check out the sample input and the expected output.
+
+Sample Input:
+ID Vals
+1 Product
+2 Milk
+3 Butter
+4 Cheese
+5 Yogurt
+6 Product
+7 Muesli
+8 Porridge
+9 Product
+10 Banana
+
+Sample Output:
+ID Vals     Rank
+1  Product  1
+2  Milk     1
+3  Butter   1
+4  Cheese   1
+5  Yogurt   1
+6  Product  2
+7  Muesli   2
+8  Porridge 2
+9  Product  3
+10 Banana   3
+
+select *,
+       sum(case when Vals = 'Product' then 1 else 0 end) over (order by ID) as ranking
+from RankingPuzzle
+order by ID;
+
+-----------------------------------------------------------------------------------------
+INSERT INTO Persons (PersonID, LastName, FirstName, Address, City)
+VALUES ('103', 'Kumar', 'Manish', 'Patna', 'Patna');
+
+
+CREATE TABLE Food (
+    PersonID int,
+    Food_Item varchar(255)
+);
+
+INSERT INTO Food (PersonID, Food_Item)
+VALUES('102', 'Egg');
+
+
+SELECT * FROM Persons
+INNER JOIN Food ON Persons.PersonID = Food.PersonID;
+
+
+SELECT Persons.PersonID, Persons.LastName, Persons.LastName, Food.PersonID, Food.Food_Item FROM Persons
+INNER JOIN Food ON Persons.PersonID = Food.PersonID;
+
+
+SELECT Persons.PersonID, Persons.LastName, Persons.FirstName, Food.Food_Item FROM Persons
+LEFT JOIN Food ON Persons.PersonID = Food.PersonID;
+
+ALTER TABLE Persons
+RENAME COLUMN "PersonID" "ID";
+
+SELECT Persons.* FROM Persons left join Food on Persons.ID=Food.PersonID
+where Food.PersonID is NULL
+
+SELECT Persons.* FROM Persons where NOT EXISTS (select * from Food where Persons.ID == Food.PersonID)
+
+------------- highest salary --------
+select * from 
+(select id, name, salary, dept, dense_rank() over(partition by dept order by salary desc) as drank from students)
+where drank = 3
+
+------------------------------------------------------
+-- create a table
+CREATE TABLE emp (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  salary int,
+  dept text,
+  manager_id int
+);
+INSERT INTO emp(id, name, salary, dept, manager_id)
+-- insert some values
+INSERT INTO emp VALUES (1, 'Ryan', '5000', 'IT', 4);
+INSERT INTO emp VALUES (2, 'Joanna', '5000', 'IT',4);
+INSERT INTO emp VALUES (3, 'Roma', '5000', 'IT', 12);
+INSERT INTO emp VALUES (4, 'Maxi', '4000', 'IT',12);
+INSERT INTO emp VALUES (5, 'Rohit', '4000', 'IT',4);
+INSERT INTO emp VALUES (6, 'Mark', '2500', 'IT',8);
+INSERT INTO emp VALUES (7, 'Rene', '6000', 'IT',8);
+INSERT INTO emp VALUES (8, 'Lars', '2000', 'IT',4);
+INSERT INTO emp VALUES (9, 'Srilatha', '4000', 'Sales', 11);
+INSERT INTO emp VALUES (10, 'Rnath', '4000', 'Sales', 16);
+INSERT INTO emp VALUES (11, 'Sarath', '3000', 'Sales',9);
+INSERT INTO emp VALUES (12, 'Asish', '2000', 'Sales',9);
+INSERT INTO emp VALUES (15, 'Pandu', '8000', 'Sales',9);
+INSERT INTO emp VALUES (13, 'Gop', '1000', 'Sales',16);
+INSERT INTO emp VALUES (14, 'Anubhav', '5000', 'Sales',16);
+INSERT INTO emp VALUES (16, 'Todd', '900', 'Sales', 9);
+-- fetch some values
+select * from emp 
+
+--------- manager name using emp_id ----------
+SELECT e.id, e.name, e.salary, e.dept, e.manager_id, m.name as manager_name from emp e join emp m
+on e.manager_id = m.id
+
+--------- or ----------
+SELECT e.*, m.name as manager_name from emp e join emp m
+on e.manager_id = m.id
+
+-------------------------------------------------------------------------
+-- create a table
+CREATE TABLE emp(
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  dept_id int
+);
+
+create table dept(
+    id INTEGER PRIMARY KEY,
+    Dept_name Text);
+-- insert some values
+INSERT INTO emp VALUES (1, 'Ryan', 101);
+INSERT INTO emp VALUES (2, 'Arman', 101);
+INSERT INTO emp VALUES (3, 'Shaym', 102);
+INSERT INTO emp VALUES (4, 'Arham', 103);
+INSERT INTO emp VALUES (5, 'Rohan','' );
+INSERT INTO emp VALUES (6, 'Pandu', NULL);
+
+Insert into dept values(101, 'IT');
+Insert into dept values(103, 'sales');
+Insert into dept values(104, 'Marketing');
+Insert into dept values(105, 'Applied');
+
+------------------- Inner join ----------------------------------
+--select e.* from emp e inner join dept d on e.dept_id = d.id;
+--select * from emp where dept_id in(select id from dept);
+--select e.* from emp e where exists(select d.* from dept d where e.dept_id = d.id);
+
+------------------------ first table data not in 2nd table----------------------------------
+--select * from emp where dept_id not in(select id from dept);
+--select e.* from emp e where not exists(select d.* from dept d where e.dept_id = d.id);
+
+-----------------------------------------------------------------------------------------------
+---------------------- Runnning total and avg-----------------------------------------------
+create table student(
+    id integer primary key,
+    Name Text,
+    Gender Text,
+    Age int);
+    
+insert into student values(1,'Sally','Female',24);
+insert into student values(2,'Roma','Female',21);
+insert into student values(3,'Elice','Female',20);
+insert into student values(4,'Lina','Female',23);
+insert into student values(5,'Ben','Male',23);
+insert into student values(6,'John','Male',19);
+insert into student values(7,'Nick','Male',18);
+insert into student values(8,'Ben','Male',20);
+
+select id, Name, Gender, Age, 
+sum(Age) over(partition by Gender order by id) as running_total, 
+avg(Age) over(partition by Gender order by id) as running_avg
+from student;
+
+------------------------------------------------------------------------------------------------------------
+---------- Under the manager emp avg salary --------------
+CREATE TABLE emp (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  salary int,
+  dept text,
+  manager_id int
+);
+
+INSERT INTO emp VALUES (1, 'Ryan', '5000', 'IT', 4);
+INSERT INTO emp VALUES (2, 'Joanna', '5000', 'IT',4);
+INSERT INTO emp VALUES (3, 'Roma', '5000', 'IT', 9);
+INSERT INTO emp VALUES (4, 'Maxi', '4000', 'IT',9);
+INSERT INTO emp VALUES (5, 'Rohit', '4000', 'IT',4);
+INSERT INTO emp VALUES (6, 'Mark', '2500', 'IT',9);
+INSERT INTO emp VALUES (7, 'Rene', '6000', 'IT',9);
+INSERT INTO emp VALUES (8, 'Lars', '2000', 'IT',4);
+INSERT INTO emp VALUES (9, 'Srilatha', '4000', 'Sales', 4);
+INSERT INTO emp VALUES (10, 'Rnath', '4000', 'Sales', 9);
+INSERT INTO emp VALUES (11, 'Sarath', '3000', 'Sales',9);
+INSERT INTO emp VALUES (12, 'Asish', '2000', 'Sales',9);
+INSERT INTO emp VALUES (15, 'Pandu', '8000', 'Sales',9);
+INSERT INTO emp VALUES (13, 'Gop', '1000', 'Sales',4);
+INSERT INTO emp VALUES (14, 'Anubhav', '5000', 'Sales',4);
+INSERT INTO emp VALUES (16, 'Todd', '900', 'Sales', 9);
+
+select b.id as manager_id, b.name as manager_name, 
+sum(a.salary) as total_salary,
+avg(a.salary) as avg_salary,
+count(*) as total_emp
+from emp a join emp b on a.manager_id = b.id
+group by b.id, b.name
+order by b.id;
+
+----------------------------------------------------------------------------------------
+calculate total sales per month-----------------
+
+create table sales(order_date date,sale int);
+insert into sales(order_date,sale)
+      values('2020-01-01',10),('2020-01-02',12),('2020-01-03',15),
+      ('2020-01-04',11),('2020-01-05',13),('2020-01-06',9),
+      ('2020-01-07',21),('2020-01-08',10),('2020-01-09',10),
+      ('2020-01-10',2),('2020-01-11',16),('2020-01-12',12),
+      ('2020-01-13',10),('2020-01-14',18),('2020-01-15',15),
+      ('2020-01-16',12),('2020-01-17',10),('2020-01-18',18),
+      ('2020-01-19',14),('2020-01-20',16),('2020-01-21',12),
+      ('2020-01-22',21),('2020-01-23',13),('2020-01-24',15),
+      ('2020-01-25',20),('2020-01-26',14),('2020-01-27',16),
+      ('2020-01-28',15),('2020-01-29',10),('2020-01-30',18);
+      
+select year(order_date) as year, year_month(order_date) as month, sum(sale) as total_sales
+from sales
+group by year(order_date),year_month(order_date)
+order by year(order_date),year_month(order_date);
+
+----------------------------------------------------------------------------------------------
+If salary of employee is missing then take avg of previous and next month salary of that employee-------------
+
+create table missing_salary(emp_id int,month int, salary int);
+insert into missing_salary(emp_id,month, salary)
+      values(101,1, 70000), (101,2, 72000), (101,3,NULL), (101,4, 76000), (101,5, 78000),
+      (101,6, 74000), (101,7, 72000), (101,8, 70000), (101,9, 71000), (101,10, 75000),
+      (101,11, 70000), (101,12, 80000),
+      (102,1, 70000), (102,2,NULL), (102,3,74000), (102,4, 76000), (102,5, 78000),
+      (102,6, 74000), (102,7, 72000), (102,8,NULL), (102,9, 71000), (102,10, 75000),
+      (102,11, 70000), (102,12, 80000);
+      
+select emp_id, month, case
+when salary IsNull then (pre_month+nxt_month)/2 
+ELSE salary
+END AS salary
+from(
+select emp_id, month, salary,
+  lag(salary, 1) over (partition by emp_id order by month) as pre_month,
+  lead(salary, 1) over (partition by emp_id order by month) as nxt_month
+from missing_salary)
+
+---------------------------------------------------------------------------------------------
+Top 2 highest application sell by account_id............................
+
+create table bonus(account_id int,applications int);
+insert into bonus(account_id,applications)
+      values(101,1), (101,2), (101,1), (102,4), (102,5),
+      (102,6), (103,7), (103,4), (104,1), (104,11),
+      (105,6), (105,2);
+      
+select account_id, sum(applications) as total_application from bonus
+group by account_id
+order by total_application desc
+limit 2
+
+----------------------------------------------------------------------------------------------
+Extract column from details column email, start_date, end_date-----------------
+
+CREATE TABLE emp (
+  emailstartend Text
+);
+
+INSERT INTO emp (emailstartend)
+VALUES ('abhaykumar123blr.in231022240416'),
+('mohandaskaram345gujju.org241022252418'),
+('soniadas789dell22.com251022263417');
+
+select SUBSTRING('abhaykumar123blr.in231022240416',1,len('abhaykumar123blr.in231022240416')-12) AS email,
+SUBSTRING('abhaykumar123blr.in231022240416',len('abhaykumar123blr.in231022240416')-11, 6) AS start_date,
+SUBSTRING('abhaykumar123blr.in231022240416',len('abhaykumar123blr.in231022240416')-5, 6) AS end_date
+from emp;
+--------------------------------------------------------------------------------------------------------------
+reverse probability of product ---------------------------
+-- create a table
+CREATE TABLE product (
+  prod1 int,
+  prod2 int,
+  prob int
+);
+-- insert some values
+INSERT INTO product (prod1, prod2, prob)
+VALUES (1,2, 15),
+(2,3, 10),
+(3,4, 6),
+(5,6, 8),
+(2,1, 4),
+(3,2, 3);
+
+select p.prod1, p.prod2, p.prob, r.prob as rev_prob 
+from product p left join product r on p.prod2||p.prod1 = r.prod1||r.prod2;
+
+output : ----------
+1|2|15|4
+2|3|10|3
+3|4|6|
+5|6|8|
+2|1|4|15
+3|2|3|10
+--------------------------------------------------------------------------------------
+From the team list create team matches --------------------
+
+CREATE TABLE series (
+  team_name TEXT
+);
+-- insert some values
+INSERT INTO series VALUES ('India');
+INSERT INTO series VALUES ('AUstrailia');
+INSERT INTO series VALUES ('Srilanka');
+INSERT INTO series VALUES ('Pakistan');
+
+-- fetch some values
+SELECT * FROM series;
+
+select 
+       a.team_name || ' VS ' || b.team_name as matches
+from   
+series a inner join series b
+on 
+       a.team_name < b.team_name ;
+	   
+------------------------------------------------------------------------------------------------
+-- create a table
+CREATE TABLE exam (
+  Name Text,
+  Subject TEXT,
+  Marks_2021 int,
+  Marks_2022 int
+);
+-- insert some values
+INSERT INTO exam VALUES ('Ravi','English',85,80);
+INSERT INTO exam VALUES ('Ram','Maths',55,50);
+INSERT INTO exam VALUES ('Alisha','Science',75,70);
+INSERT INTO exam VALUES ('Ravi','Science',80,70);
+INSERT INTO exam VALUES ('Ram','English',95,90);
+INSERT INTO exam VALUES ('Alisha','English',75,75);
+INSERT INTO exam VALUES ('Ram','Science',55,60);
+-- fetch some values
+--SELECT Name, Subject,Marks_2021, max(Marks_2022) FROM exam
+--group by Subject;
+
+select Name, Subject, max(Marks_2021) from 
+(select Name, subject, Marks_2021, Marks_2022 from exam
+where subject||Marks_2022 in (select subject||max(Marks_2022) from exam group by subject))
+group by Subject;
+---------------------------------------------------------------------------------------------
+-- previouis mark and current mark diffrence for every student---------------
+
+CREATE TABLE exam (
+  Name Text,
+  score int
+  );
+-- insert some values
+INSERT INTO exam VALUES ('Ravi',10);
+INSERT INTO exam VALUES ('Ravi',20);
+INSERT INTO exam VALUES ('Ravi',15);
+INSERT INTO exam VALUES ('Ravi',30);
+INSERT INTO exam VALUES ('Ram',5);
+INSERT INTO exam VALUES ('Ram',8);
+INSERT INTO exam VALUES ('Ram',20);
+INSERT INTO exam VALUES ('Ram',25);
+-- fetch some values
+--select * from exam;
+
+select Name, score, score-lag(score,1) over(partition by Name) as diff from exam;
+---------------------------------------------------------------------------------------------------
+-- merge two table data and create one column which shows data is updated or not---------------
+
+CREATE TABLE exam (
+  id int,
+  Name Text,
+  score int
+  );
+  
+CREATE TABLE exam_new (
+  id int,
+  Name Text,
+  score int
+  );  
+-- insert some values
+INSERT INTO exam VALUES (1,'Ravi',80);
+INSERT INTO exam VALUES (2,'Ram',90);
+INSERT INTO exam VALUES (3,	'Alisha',70 );
+
+INSERT INTO exam_new VALUES (4,'Riya',80);
+INSERT INTO exam_new VALUES (5,'Rahul',90);
+INSERT INTO exam_new VALUES (3,	'Alisha',80 );
+
+-- fetch some values
+select id,Name,score, case 
+when id in (select id from exam where id in(select id from exam_new)) then 'yes'
+else 'no' end as record_update
+from 
+(select * from exam
+where id not in(select id from exam_new)
+union
+select * from exam_new);
+
+---------------------------------------------------------------------------------
+If three continus appoinment is there then dr will visit.
+calculate how many hour dr will stay.--------------------------
+-- create a table
+CREATE TABLE doctor (
+  id INTEGER,
+  appinmnet TEXT
+);
+-- insert some values
+INSERT INTO doctor VALUES (1,'y');
+INSERT INTO doctor VALUES (2,'n');
+INSERT INTO doctor VALUES (3,'y');
+INSERT INTO doctor VALUES (4,'y');
+INSERT INTO doctor VALUES (5,'y');
+INSERT INTO doctor VALUES (6,'n');
+INSERT INTO doctor VALUES (7,'y');
+INSERT INTO doctor VALUES (8,'n');
+INSERT INTO doctor VALUES (9,'y');
+INSERT INTO doctor VALUES (10,'y');
+INSERT INTO doctor VALUES (11,'y'); 
+INSERT INTO doctor VALUES (12,'n');
+-- fetch some values
+select sum(consi_appoinment) as spend_time from
+(select id, appinmnet, case 
+when appinmnet == 'y' and lead(appinmnet,1) over()== 'y' and lead(appinmnet, 2) over()=='y' then 3
+else 0 end as consi_appoinment from doctor);
+
+-------------or -------------
+
+select sum(number) from 
+(select appinmnet, count(*) as number from
+(select doctor.*, 
+row_number() over(order by id)-row_number() over(partition by appinmnet order by id)
+as grp from doctor)
+where appinmnet = 'y'
+group by grp, appinmnet)
+where number>2;   
+------------------------------------------------------------------------------------------------
+-- select employee whose are same salary under manager--------------------
+
+CREATE TABLE emp (
+  id INTEGER,
+  name TEXT,
+  salary int,
+  dept int,
+  manager int
+);
+-- insert some values
+INSERT INTO emp VALUES (1,'AAA',5000,1,1);
+INSERT INTO emp VALUES (2,'BBB',5000,1,1);
+INSERT INTO emp VALUES (3,'ccc',10000,1,1);
+INSERT INTO emp VALUES (4,'ddd',5000,2,2);
+INSERT INTO emp VALUES (5,'eee',10000,2,2);
+--------- code--------
+select * from emp
+where salary||manager in (select sal_mgr from (select salary||manager as sal_mgr, count() from emp
+group by salary, manager
+having count()>1));
+
+------------------------------------------------------------------------------------------------
+-- select over where three continous zero runs-----------------------
+
+CREATE TABLE game (
+  over TEXT,
+  run int
+);
+-- insert some values
+INSERT INTO game VALUES ('1.1',1);
+INSERT INTO game VALUES ('1.2',0);
+INSERT INTO game VALUES ('1.3',4);
+INSERT INTO game VALUES ('1.4',0);
+INSERT INTO game VALUES ('1.5',0);
+INSERT INTO game VALUES ('1.6',2);
+INSERT INTO game VALUES ('2.1',1);
+INSERT INTO game VALUES ('2.2',0);
+INSERT INTO game VALUES ('2.3',0);
+INSERT INTO game VALUES ('2.4',0);
+INSERT INTO game VALUES ('2.5',4);
+INSERT INTO game VALUES ('2.6',2);
+
+-- fetch some values
+select cast(over as int) from 
+(select over, run, case
+when run=0 and lag(run,1) over(partition by cast(over as int)) =0 and lead(run,1) over(partition by cast(over as int)) =0 then 'y'
+else 'n' end as zerorun from game)
+where zerorun='y';
+-----------------------------------------------------------------------------------------------
+--- calculate employee active and inactive time in minutes------------
+
+CREATE TABLE employee (
+  id INTEGER,
+  activity TEXT,
+  activity_time datetime2
+);
+-- insert some values
+INSERT INTO employee VALUES (100, 'Login', '2022-04-25 09:00:00');
+INSERT INTO employee VALUES (100, 'Active', '2022-04-25 10:30:00');
+INSERT INTO employee VALUES (100, 'inActive', '2022-04-25 12:30:00');
+INSERT INTO employee VALUES (100, 'Active', '2022-04-25 14:00:00');
+INSERT INTO employee VALUES (100, 'logout', '2022-04-25 16:00:00');
+-- fetch some values
+
+select id, sum(inactive) as inactive_time, sum(active) as active_time from
+(select id, activity, activity_time, case
+when activity = 'inActive' then DATEDIFF(minute, lead(activity_time,1) over(partition by id order by activity_time), activity_time)
+else 0 end as inactive,
+case
+when activity != 'inActive' then DATEDIFF(minute, lead(activity_time,1) over(partition by id order by activity_time), activity_time)
+else 0 end as active
+from employee)
+group by id;
+
+---------------------------------------------------------------------------------------------------------
+SELECT DATEDIFF(year,        '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(quarter,     '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(month,       '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(dayofyear,   '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(day,         '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(week,        '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(hour,        '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(minute,      '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(second,      '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(millisecond, '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+SELECT DATEDIFF(microsecond, '2005-12-31 23:59:59.9999999', '2006-01-01 00:00:00.0000000');
+----------------------------------------------------------------------------------------------------------
+Input table :
+id p_id
+1 null
+2 1
+3 1
+4 2
+5 2
+
+output table :
+id  node_type
+1|Root
+2|Inner
+3|Leaf
+4|Leaf
+5|Leaf
+---------
+-- create a table
+CREATE TABLE tree_tab (
+  id INTEGER,
+  p_id int
+);
+-- insert some values
+INSERT INTO tree_tab VALUES (1,null);
+INSERT INTO tree_tab VALUES (2,1);
+INSERT INTO tree_tab VALUES (3,1);
+INSERT INTO tree_tab VALUES (4,2);
+INSERT INTO tree_tab VALUES (5,2);
+
+select id, case
+when p_id isnull then 'Root'
+when id in (select p_id from tree_tab) then 'Inner'
+else 'Leaf' end as node_type 
+from tree_tab;
+-----------------------------------------------------------------------------
+-- select max marks from multiple subject columns------------
+ 
+CREATE TABLE students (
+  id int,
+  sub1 int,
+  sub2 int,
+  sub3 int
+);
+-- insert some values
+INSERT INTO students VALUES (1,5,6,4);
+INSERT INTO students VALUES (2, 8,3,6);
+INSERT INTO students VALUES (1, 8,3,10);
+-- fetch some values
+SELECT id, 
+(select max(marks) from (VALUES ([sub1]), ([sub2]) , ([sub3])) as mytab(marks)) as max_marks
+FROM students;
+-------------- oR -----------------
+SELECT id, case
+when sub1 > sub2 and sub1>sub3 then sub1
+when sub2>sub1 and sub2>sub3 then sub2
+when sub3>sub2 and sub3>sub1 then sub3
+end as max_marks
+FROM students;
+--------------------------------------------------------------------------------------
+-- using with create new table----------------------------------
+
+CREATE TABLE students (
+  sale INTEGER,
+  name TEXT,
+  gender TEXT
+  
+);
+-- insert some values
+INSERT INTO students VALUES (500, 'Ryan', 'M');
+INSERT INTO students VALUES (100, 'Joanna', 'F');
+INSERT INTO students VALUES (300, 'Priya', 'F');
+INSERT INTO students VALUES (200, 'Neha', 'F');
+INSERT INTO students VALUES (200, 'Mohan', 'M');
+INSERT INTO students VALUES (200, 'Sachin', 'M');
+-- fetch some values
+with new_students as
+(SELECT sum(sale) as sum_sale, gender FROM students
+group by gender)
+
+select * from new_students where gender = 'M';
+------------------------------------------------------------
+---- Pivot example -----------------
+Create Table geeksforgeeks 
+( 
+CourseName Text, 
+CourseCategory Text,
+Price int  
+); 
+
+Insert into geeksforgeeks  values('C', 'PROGRAMMING', 5000);
+Insert into geeksforgeeks  values('JAVA', 'PROGRAMMING', 6000); 
+Insert into geeksforgeeks  values('PYTHON', 'PROGRAMMING', 8000); 
+Insert into geeksforgeeks  values('PLACEMENT 100', 'INTERVIEWPREPARATION', 5000); 
+
+--SELECT * FROM geeksforgeeks; 
+
+SELECT CourseName, PROGRAMMING, INTERVIEWPREPARATION
+FROM geeksforgeeks 
+PIVOT(SUM(Price) FOR CourseCategory IN (PROGRAMMING, INTERVIEWPREPARATION )) AS PivotTable; 
+---------------------------------------------------------------------------------------------------
+------running sum with no ordered col-----------
+-- create a table
+CREATE TABLE students (
+  id INTEGER,
+  dept TEXT,
+  age int
+);
+-- insert some values
+INSERT INTO students VALUES (1, 'comp', 24);
+INSERT INTO students VALUES (2, 'Mech', 25);
+INSERT INTO students VALUES (9, 'Mech', 26);
+INSERT INTO students VALUES (8, 'Mech', 22);
+INSERT INTO students VALUES (6, 'comp', 23);
+INSERT INTO students VALUES (5, 'comp', 28);
+INSERT INTO students VALUES (7, 'Mech', 25);
+INSERT INTO students VALUES (4, 'Mech', 21);
+INSERT INTO students VALUES (3, 'comp', 22);
+-- fetch some values
+with stu as
+(select *, row_number() over() as r_num from students)
+
+select *, sum(age) over(order by r_num) from stu;
+------------------------------------------------------------------------------
+---select maximum salary from employee id, dept_name, slary from each department.
+-- create a table
+CREATE TABLE employee (
+  id INTEGER,
+  dept_id id,
+  salary int
+);
+
+CREATE TABLE dept (
+  id INTEGER,
+  dept_name text
+);
+-- insert some values
+INSERT INTO employee VALUES (1, 101, 24000);
+INSERT INTO employee VALUES (2, 101, 28000);
+INSERT INTO employee VALUES (9, 102, 26000);
+INSERT INTO employee VALUES (8, 101, 34000);
+INSERT INTO employee VALUES (6, 102, 29000);
+INSERT INTO employee VALUES (5, 102, 28000);
+INSERT INTO employee VALUES (7, 101, 25000);
+INSERT INTO employee VALUES (4, 101, 34000);
+INSERT INTO employee VALUES (3, 102, 22000);
+
+insert into dept values(101, 'Comp');
+insert into dept values(102, 'Mech');
+insert into dept values(103, 'Civil');
+-- fetch some values
+with emp as
+(select * from 
+(select *, row_number() over(partition by dept_id order by salary desc) as drank  
+from employee)
+where drank = 1)
+select e.id, e.dept_id, d.dept_name, e.salary from emp e join dept d
+on
+e.dept_id = d.id;
+
+----------------Flight root from source to destination--------------------------------
+drop table if exists flights;
+create table flights(source TEXT,destination TEXT, flight TEXT);
+insert into flights(source,destination,flight)
+      values('Jaipur','Delhi','F123'),
+      ('Delhi','Jaipur','F321'),
+      ('Mumbai','Jaipur','F881'),
+      ('Jaipur','Mumbai','F188'),
+      ('Dehradoon','Mumbai','F677'),
+      ('Mumbai','Dehradoon','F776'),
+      ('Delhi','Chandigarh','F786'),
+      ('Chandigarh','Delhi','F687'),
+      ('Delhi','Amritsar','F290'),
+      ('Amritsar','Dehradoon','F398'),
+      ('Dehradoon','Amritsar','F893'),
+      ('Chandigarh','Jaipur','F742'),
+      ('Jaipur','Chandigarh','F247'),
+      ('Dehradoon','Delhi','F432'),
+      ('Delhi','Dehradoon','F234'),
+      ('Amritsar','Chandigarh','F807'),
+      ('Chandigarh','Amritsar','F708'),
+      ('Amritsar','Delhi','F029');
+      
+select f.source, f.destination, f.flight, f.source||'->'||f.destination as route from flights f
+union all
+select f1.source, f2.destination, f1.flight||' -> '||f2.flight as flight, f1.source||'->'||f1.destination||'->'||f2.destination as route 
+from flights f1 join flights f2 on f1.destination = f2.source
+union all
+select f1.source, f3.destination, f1.flight||' -> '||f2.flight||' -> '||f3.flight as flight, f1.source||'->'||f1.destination||'->'||f2.destination||'->'||f3.destination 
+from flights f1 join flights f2 on f1.destination = f2.source 
+join flights f3 on f2.destination = f3.source
+order by source;      
+
+-----------------------working on date time-----------------------------------------------------------------
+
+SELECT CONVERT (Time, GETDATE()) AS [Current Date]
+GO
+SELECT CONVERT (Time, CURRENT_TIMESTAMP) AS [Current Date]
+GO
+SELECT CONVERT (Time, SYSDATETIME()) AS [Current Date]
+GO
+--DateName will return string format -----------------
+SELECT DATENAME (YEAR, GETDATE()) AS [Year],
+	DATENAME (QUARTER, GETDATE()) AS [Quarter],
+	DATENAME (MONTH, GETDATE()) AS [Month],
+	DATENAME (DayOfYear, GETDATE()) AS [DayOfYear],
+	DATENAME (DAY, GETDATE()) AS [Day],
+	DATENAME (WEEK, GETDATE()) AS [Week],
+	DATENAME (WEEKDAY, GETDATE()) AS [Weekday],
+	DATENAME (HOUR, GETDATE()) AS [Hour],
+	DATENAME (MINUTE, GETDATE()) AS [Minute],
+	DATENAME (SECOND, GETDATE()) AS [Second],
+	DATENAME (MILLISECOND, GETDATE()) AS [Millisecond],
+	DATENAME (MICROSECOND, GETDATE()) AS [Microsecond],
+	DATENAME (NANOSECOND, GETDATE()) AS [NanoSecond],
+	DATENAME (ISO_WEEK, GETDATE()) AS [ISO Week]
+
+-- Datepart will return integer format --------------------
+ELECT DATEPART (YEAR, GETDATE()) AS [Year],
+	DATEPART (QUARTER, GETDATE()) AS [Quarter],
+	DATEPART (MONTH, GETDATE()) AS [Month],
+	DATEPART (DayOfYear, GETDATE()) AS [DayOfYear],
+	DATEPART (DAY, GETDATE()) AS [Day],
+	DATEPART (WEEK, GETDATE()) AS [Week],
+	DATEPART (WEEKDAY, GETDATE()) AS [Weekday],
+	DATEPART (HOUR, GETDATE()) AS [Hour],
+	DATEPART (MINUTE, GETDATE()) AS [Minute],
+	DATEPART (SECOND, GETDATE()) AS [Second],
+	DATEPART (MILLISECOND, GETDATE()) AS [Millisecond],
+	DATEPART (MICROSECOND, GETDATE()) AS [Microsecond],
+	DATEPART (NANOSECOND, GETDATE()) AS [NanoSecond],
+	DATEPART (ISO_WEEK, GETDATE()) AS [ISO Week]
+
+--DATEADD function helps us to get past or future dates based on the number expression passed--------------
+SELECT GETDATE() AS [Today]
+GO
+SELECT DATEADD (QUARTER, 2, GETDATE()) AS [Quarter],
+    DATEADD (MONTH, 2, GETDATE()) AS [Month],
+    DATEADD (DAY, 2, GETDATE()) AS [Day],
+    DATEADD (WEEK, 2, GETDATE()) AS [Week],
+    DATEADD (WEEKDAY, 2, GETDATE()) AS [Weekday]
+
+---------------------
+SELECT YEAR(GETDATE()) AS [Year],
+	MONTH(GETDATE()) AS [Month],
+	DAY(GETDATE()) AS [Day],
+	EOMONTH(GETDATE()) AS [MonthEnd Date]
+-- Year, month from date column -------------------
+SELECT
+YEAR(date) AS year,
+MONTH(date) AS month
+FROM dates;
+------------
+SELECT
+YEAR(date) AS year,
+MONTHNAME(date) AS month
+FROM dates;
+--------------------
+SELECT
+EXTRACT(YEAR FROM date) AS year,
+EXTRACT(MONTH FROM date) AS month
+FROM dates;
+------------------
+SELECT
+EXTRACT(YEAR_MONTH FROM date) AS year_and_month
+FROM dates;
+---------------------------------------------------------------	
+	
+
+
+
+
+
+
+	   
+	   

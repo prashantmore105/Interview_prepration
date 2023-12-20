@@ -1,0 +1,595 @@
+site# https://www.educba.com/spark-executor/?source=leftnav
+
+spark actions and trasformations
+word count spark 
+string reverse   --done
+list column -1 to reverse    --done
+deployement in spark in cluter mode (spark submit)
+code to print duplicate numbers,duplicate numbers in list  --done
+reverse of a sentence word by word              --done
+handle data scewness in spark
+types of hive tables 
+types of transformations 
+spark optimization techniques
+duplicate data from lake drop  duplicate
+
+AWS glue vs AWS EMR https://www.trianz.com/insights/aws-glue-vs-emr ,https://www.knowledgenile.com/blogs/aws-glue-vs-emr/
+AVaro vs parquet 
+withcolumn ,filter and lit funtions
+
+spark submit resource management
+
+Imputus Interview Questions: Kranthi Interviewer
+------------------------------------------------
+1) Remove duplicates in HIVE tables -- insert overwrite with distinct query and create a new table.
+2) DELTA data import using sqoop
+3) query to fetch second highest salary
+4) Hive performance issues bucketing ,partiton ,vectarization(instead of row by row processes 1024 rows ata a time )
+5) Spark Memory issues
+6) different File formats in HIVE (avro vs parquet )
+7) Hive supports which file format
+8) write a program to find a word("BigData") in text file
+9) provided 2 tables by the interviewer and asking for the equi join and non-equi join queries
+10) Different types of Deployment modes in Spark
+11) How to recover corrupted data in HIVE and how you will handle with downstream systems   -- msck repair table
+12) Spark Query plans. (logical plan and physical plan)
+
+Agile  --DOne
+-----
+Every 2 weeks is a sprint
+we use JIRA dashboard
+We have story points
+We have implementation stories and analysis stories
+We have retro calls in which scrum master will get feedback from all the team
+we have scrum calls everyday to say the status of the implementation
+ 
+
+
+
+what is the use of using shellscript in your project
+diff between incremental append and incremental last modified
+How to avoid duplicate records in sqoop while importing into HDFS
+sqoop job
+spark standalone cluster vs YARN cluster vs mesos
+partition when you use standalone cluster and YARN cluster
+on what basis spark create partitions
+default block size in local file system
+how to find hidden files in unix
+find vs grep in unix
+Hadoop/Hive/Spark version
+Hive Architecture
+Hive matadata storage
+MSCK repair table
+what case mapreduce job trigger and what case mapreduce job will not trigger.
+
+
+HIVE performance
+HIVE vs Spark
+lateral view and explode() in HIVE
+inferschema
+diff between dataframe and dataset.
+oltp vs olap
+Airflow Scheduling tool
+mapSide Joins in HIVE
+Joins in Spark SQL
+
+Incremental Append vs lastmodified
+----------------------------------
+Append works for creation of new records in the table.
+Lastmodified works for both creation records and last updated records using lastupdate_on column.
+Append might import duplicate records.
+lastmodified uses merge-key(primary key) to update the existing records in rdbms it will load if record not exists.
+you have to create sqoop job to implement these features in sqoop.
+So that sqoop will have metastore information of last-value, table, incremental column and mode. 
+
+
+
+SQL Questions:
+--------------
+1) 5th highest salary
+
+   select 8 from (select e.* ,dense_rank() over (order by sal desc) rnk from emp e  )where rank =5
+   select * from (select e.*,dense_rank() over(order by sal desc) as rnk from emp e)
+   where rnk=5; -- dense_rank() won't skip the sequence
+   
+   Using Limit
+   -------------
+   
+   select distinct(sal) from emp order by sal desc limit 4,1 -- 5th highest salary
+   select distinct(sal) from emp order by sal desc limit 1,1 -- 2nd highest salary
+   
+   
+2) top 3 salaried employees
+   select * from (select e.*,dense_rank() over(order by sal desc) as rnk from emp e)
+   where rnk<=3; 
+   
+3) Get more than 2 employees under manager
+
+   select * from (select e.*,count(*) over(partition by mgr) as no_of_emp from emp e)
+   where no_of_emp>2; 
+   
+4) find max sal employee without max
+
+    select * from emp where sal not in (select e.sal from emp e, emp e1 where e.sal > e1.sal)
+
+5) find min sal employee without min
+   select * from emp where sal not in (select e.sal from emp e, emp e1 where e.sal < e1.sal)
+
+6) find no of rows in a table without count
+   select max(rowid) from (select e.*,row_number() over(order by empno) as rowid from emp);
+
+7) find even or odd row from a table
+   select * from (select e.*,row_number() over(order by empno) as rowid from emp) where rowid/2=0;
+
+
+-----------------------
+Spark Deployment Modes: ***
+-----------------------
+
+1) Client Mode --> local mode  - For development/testing purpose, we use client mode.
+   The Driver program runs in the local mechine.
+   When you submit spark job in client mode, Spark Session doen't go to YARN resource manager directly.
+   Driver(main() method) will run in local mechine (client mechine).
+   If you submit the spark job in client mode, if you stop the session JVM driver will die and spark job will not run. Because of JVM driver is running in local mechine.
+   ctrl+c to terminate the client mode.
+   
+2) Cluster Mode --> YARN/MESOS/Standalone/Kubernetes - In PROD/testing large data sets, we use Cluster mode.
+   In Cluster Mode Driver(main() method) will run in worker node which is part of Cluster.	
+   If you submit the spark job in Cluster mode and if you stop the session, JVM driver will not die and spark job will run, because JVM driver is running in cluster.
+   
+sudo jps-- will give you all the list of processes
+usr/lib -- you can find the list of resources in this directory
+
+spark-shell --master local (Spark application launched in local)
+spark-shell --master yarn  (submitting spark application in YARN cluster)
+
+1) we should use cache() and persist to store intermediate result which will use for further transformations.
+2) Coalesce() is used to reduce the partitions. Coalesce is faster when compare with repartition. 
+3) find duplicate records
+   select order_id,count(*)
+   from orders
+   where 1=1
+   group by order_id
+   having count(*) > 1
+   
+   select order_id,date,row_number() over (partition by order_id,date order by order_id asc) as rownum
+   from orders 
+   where rownum>1
+   
+4) Stages vs Tasks
+   Stages get created when any Wide/Narrow transformations performed 
+   Task depends on number of partitions we defined. If we change the no of partitions tasks will get change.
+5) Partitions on hive table based low cardinality.
+6) Git and Junkins--> Once we commmit in GIt, Devops team will take care of Junkins.
+7) Spark Validation --> 
+8) Accumulators
+10) Spark-version 2.3.1
+11) what are Spark optimization techniques.
+
+    1) Don't Use Collect(), use take(1)
+	   When you use collect action, the result is returned to the driver node.
+	   If data is huge, driver node might easily run out of memory issue.
+	   Take action, it will scan first partition and returns the result.
+	2) Use Cache()/Persist() --> If you wanted to perform multiple transformations on the same dataframe use cache/persist. Unpersist the data once 
+	   the computations done.
+	3) Use reduceByKey instead of groupByKey 
+	   GroupByKey shuffles the key-value pairs across the nodes and then combines them. with much larger data shuffling is taking more time.
+       ReduceByKey first combines the keys with in the same partition and then only does it shuffle the data.
+    4) broadcast variable
+	   Broadcast joins are used whenever we need to join a larger dataset with a smaller dataset. When we use broadcast join spark broadcasts the smaller dataset to all nodes in the cluster since the data to be joined is available in every cluster nodes, spark can do a join without any shuffling. Using this broadcast join you can avoid sending huge loads of data over the network and shuffling.
+	   Using the explain method we can validate whether the data frame is broadcasted or not. 
+	   df1 = spark.read.parquet("file1")
+	   df2 = spark.read.parquet("file2")
+	   broadcast_join = df1.join(broadcast(df2),"id")
+       broadcast_join.explain()
+	   
+	   spark.conf.get("spark.sql.autoBroadcastJoinThreshold").toInt -- used to get the broadcast size.
+	   
+	   spark.conf.set("spark.sql.autoBroadcastJoinThreshold",10485760) -- to enable 10mb size
+	   spark.conf.set("spark.sql.autoBroadcastJoinThreshold",-1) -- to disable
+	   
+	   use below import to perform broadcast joins
+	   org.apache.spark.sql.funcitons.broadcast
+	   
+	5) Go with DataFrame SQL/DSL(Domain specific language) instead of RDD(logical plan and physical plan will take time in RDD)
+	   RDD Serialize and De-serialize the data when it distributes the data across the nodes in a cluster.
+	   Serialization & De-Serializations are very expensive operations.
+	   There is no serialization and de-serialization concept in dataframe. Dataframes internally uses catalyst optimizer for better performance.
+	6) Check the memory settings and provide the executor and driver memory and number of cores for the spark submit command.
+	7) Go with coalesce instead of re-partition to reduce the partitions.
+	8) Avoid UDF's(User Defined Functions)
+	   Try to use existing spark built-in functions instead of UDFs. Spark cannot apply optimization for UDFs and you will loose all the optimizations spark does on DataFrame/Dataset.
+	9) Disable Debug & Info logging - This is one of the simple way to improve performance of the spark application.
+	   During development phase of spark application , we usually write Debug/info messages to consoleusing println() and logging to a file 
+	   using logging framework(log4j)
+	   These both operations results I/O operations hence causes persotmance issues when you run spark jobs with huge data.
+	10) File format selection: 
+	    Spark supports many formats, such as CSV, JSON, XML, PARQUET, ORC, AVRO, etc.
+		Spark jobs can be optimized by choosing the parquet file with snappy compression which gives the high performance and best analysis.
+		Parquet file is native to Spark which carries the metadata along with its footer.
+	11) Use mapPartition over map
+	12) Kyro serialization property
+        conf = SparkConf()	
+		.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+		.set("spark.kryo.registrationRequired", "true")
+	
+12) what are the challenges in spark appication.
+    
+13) Dynamic allocation properties in spark.
+    conf = SparkConf().setAppName("Spark dynamic allocation").\
+        set("spark.dynamicAllocation.enabled", "true").\
+        set("spark.shuffle.service.enabled", "true").\
+        set("spark.dynamicAllocation.initialExecutors", "1").\
+        set("spark.dynamicAllocation.executorIdleTimeout", "5s").\
+        set("spark.executor.cores", "1").\
+        set("spark.executor.memory", "512m")
+    
+
+14) out of memory exception - Spark jobs might fail due to out of memory exceptions at the driver or executor end.
+                    Spark Dynamically allocate the memory for Driver and Executor. If more jobs are running parallelly we might face memory allocation issues.
+					When troubleshooting the out of memory exceptions, you should understand how much memory and cores the application requires, 
+					and these are the essential parameters for optimizing the Spark application. 
+					Based on the resource requirements, you can modify the Spark application parameters to resolve the out-of-memory exceptions.
+					1) When the Spark driver runs out of memory, Set a higher value for the Driver memory.
+					   --conf spark.driver.memory= <XX>g
+					   for timeout -->.set("spark.network.timeout", "600s")
+					   
+					   Reasons for Driver memory issue.
+					   1) collect() on top of large datasets.
+					   2) Broadcast join that does not fit into memory
+					      you can increae the Driver memory/we can reduce the threshold limit of the broadcast table.
+					      
+					   
+					2) When the executor runs out of memory, Set a higher value for the executor memory.
+					   --conf spark.executor.memory= <XX>g
+					   Reasons: 
+					   1) High concurrency(no of cores) with in executor --no of cores should be less than 5 for each executor. it should be below 5 cores. Otherwise we may ran into this issue.
+					   2) Due to Big Partitions -- if one of the partition is very big for some reason, you may ran into Executor OOM.
+					      Reduce the Partition size by deviding the existing partition.
+					   3) YARN memory overhead is very small -- increase the YARN memory (YARN memory =10% of executor memory)
+					   
+					3) When the container hosting the executor needs more memory for overhead tasks or executor tasks, 
+					   Set a higher value for spark.yarn.executor.memoryOverhead based on the requirements of the job.
+					   --conf spark.yarn.executor.memoryOverhead=XXXX
+					   
+	Calculation of memory: Example: Cluster nodes - 5
+	                                each node memory - 64 gb
+									each node has    -16 cores (remove 1 because of other background processes)
+									Total cores in cluster - 5*15= 75
+									num-executors - 75/5 = 15 (total cores in the cluster/cores per executor)
+									executors-per node - 15/5 =3 (num-executors/num of nodes in the cluster)
+									executor-memory - 64/3= 21gb (leave 1 to 3gb for YARN overhead memory, final result is 18gb)
+									executor-cores - 5 (spark recomended)
+									driver-memory - 18g
+									
+									you can also set in spark conf
+									spark.executor.cores = 5
+									spark.executor.instances = 3
+									spark.executor.memory = 18g
+									spark.yarn.executor.memoryOverHead = 3g
+									spark.driver.memory = 18g
+									
+									Driver Memory is of two types. 1) spark.driver.memory
+																   2) spark.driver.memoryOverHead
+																   
+									Executor memory is of three types: 1) spark.executor.memoryOverHead
+									                                   2) spark.executor.memory
+																	   3) spark.executor.offheap.size
+									
+					    
+15) What is trait in Scala - -Traits in scala are similar to interface in Java. There is no trait concept in Java.
+                             -Traits are used to share Functions and fields in the classes.
+							 Classes and Objects can extend the traits and traits can not be instantiated. Hence traits can not have parameters.
+							 -Traits can have both abstract(no function implemention) and non abstract( with function implementation) methods.
+							 Generally we can have one super class and extend with one interface.
+							 -We can have multiple traits and we can extend multiple traits in the super class with extend/with.
+							 -If you extend a trait in the class then you should implement all the abstract functions/methods definitions in the class.
+							 -But Non-abstract functions are not required to implement inside the class, You can use override to change the function implementation.
+							 
+							 Traits cannot have parameters.If any class in scala extended trait, all the abtract functions inside the trait
+                             should define in class. 
+							 
+16) what is scala function currying - Function Currying is the process/technique of transforming a function with multiple arguments to a function with single argument.
+17) Higher order function - Higher order functions are functions which will take functions as arguments and return function as a result.
+18) Do-While in scala 
+19) alternate for for-loop in scala -- Foreach
+20) Closures in Scala: Closure is a function which uses one or more variables outside of this function.
+21) Reduce vs ReduceByKey: Reduce must pull the entire dataset into a single location and perform the reducing.
+                           ReduceByKey reduces one value for each key.
+22) YARN vs Standard Cluster in Spark:  
+23) Internal tables vs external tables (when create what)
+24) can we convert external table to internal table
+25) different file formats
+26) Spark Architecture --> When you submit the job what will happen.
+27) Spark job config parameters to run the job fast.
+28) Memory Management in Spark-job
+    
+	6 Nodes Cluster --> Each Node have 15 cores(cpu) and each node is of 64GB RAM
+	1 core = 1 task
+	for example we can give 5 parallel tasks for each Executor(no of Cores=5)
+	
+	--noof-cores=5 (per executor)
+	--noof-executors = 15/5--> 3 executors for each node
+	--Executor-Memory= 64/3 --> 21 gb, 1 to 3 gb for YARN memory (we can have 5 to 18 gb for each executor)
+	--Driver-Memory = Executor Memory
+	
+	Example: Node-1
+	         Executor-1
+			 Task1,Task2,Task3,Task4,Task5
+			 
+			 Executor-2
+			 Task1,Task2,Task3,Task4,Task5
+			 
+			 Executor-3
+			 Task1,Task2,Task3,Task4,Task5
+			 
+29) How to find Data Frame Partitions.
+    df.rdd.partitions.size/df.rdd.getNumPartitions
+30) when we will increase the partition and decrease the partitions.
+    Based on the Dataset Size.
+	
+31) how to handle bad/corrupt data in spark?
+    a) PERMISSIVE: it is the default mode. If it finds corrupt/bad data it will give null values.
+	               You should pass Schema while reading the DF.
+				   
+				   //Consider an input csv file with below data
+					Country, Rank
+					France,1
+					Canada,2
+					Netherlands,Netherlands
+
+					val df = spark.read
+							 .option("mode", "PERMISSIVE")
+							 .schema("Country String, Rank Integer")
+							 .csv("/tmp/inputFile.csv")
+	
+	b) Use DROPMALFORMED: DROPMALFORMED mode populates only cleaned records without throwing any error, and the corrupted records are discarded during the creation of the dataframe.
+	   
+	    val df = spark.read.format("csv")
+		.schema("Country string,Rank integer")
+		.option("header","true")
+		.option("mode", "DROPMALFORMED")
+		  .load("file:///c:/BigData/country_bad.csv")
+		  
+		  
+	
+	c) use FAILFAST	: FAILFAST mode throws an error if any corrupted record gets detected during the creation of the dataframe.
+	                  And it’s a best practice to use this mode in a try-catch block.
+
+        try{
+        val df = spark.read.format("csv")
+		.schema("Country string,Rank integer")
+		.option("header","true")
+		.option("mode", "FAILFAST")
+		  .load("file:///c:/BigData/country_bad.csv")
+		} catch{
+		case e:Exception => print(e)
+		}
+        	
+    d) Using badRecordsPath
+	   In this option, Spark processes only the correct records and the corrupted or bad records are excluded from the processing.
+	    
+	   //Consider an input csv file with below data
+		Country, Rank
+		France,1
+		Canada,2
+		Netherlands,Netherlands
+
+		val df = spark.read
+              .option("badRecordsPath", "/tmp/badRecordsPath")
+              .schema("Country String, Rank Integer")
+              .csv("/tmp/inputFile.csv")
+			  
+	
+	
+33) sortBy vs orderBy: 
+    
+	sortBy worked with multiple reducers and provide the result collectively.for each partition one reducer will work. Output may not be accurate. It will take less time as the number of reducers are more.
+	order by worked on all the partitions with one reducer and provide the output. Output will be accurate. but it will take more time if dataset is huge. use limit with order by. 
+	
+34) reduceByKey vs groupByKey: both will give the same result.
+    GroupByKey, first shuffles the key-value pairs across the nodes and then combines them. with much larger data shuffling is taking more time.
+    ReduceByKey first combines the keys with in the same partition and then only does it does the shuffling.
+	
+35) how to write data to HIVE table using Spark.
+   
+    df.write.format("hive").saveAsTable("test.test_tables")
+	
+	Hive Dynamic partition properties:
+	
+	spark.sqlContext.setConf("hive.exec.dynamic.partition","true")
+	spark.sqlcontext.setConf("hive.exec.dynamic.partition.mode","nonstrict")
+	
+	df.write.format("hive").partitionBy("order_date").saveAsTable("test.test_table")
+	df.write.format("hive").mode("overwrite/append").partitionBy("order_date").saveAsTable("test.test_table")
+	
+36) what is catalyst optimizer in spark?
+
+    Data Frame default optimizer which will take care of dataframe performance.
+    Catalyst Optimizer allows both Rule Based optimization and Cost Based optimization. In Rule Based optimization, based on some rules optimizer will determine the execution of the query. In Cost Based optimization, multiple plans for the executions will be developed by optimizer and then calculates the cost. Post that decides the best way to do complete the operation.
+	
+37) createOrReplaceTempView vs createOrReplaceGlobalTempView
+    CreateTempView creates a memory reference to the Dataframe in use. The lifetime for this is tied to the spark session in which the Dataframe was created in. createGlobalTempView (which is not present in 2.0 but is added in 2.1.0) on the other hand allows you to create the references that can be used across spark sessions.
+	
+38) SparkContext vs SparkSession:
+    SparkContext has been available since Spark 1.x versions and it’s an entry point to Spark when you wanted to program and use Spark RDD.
+	
+	val conf = new SparkConf().setAppName("sparkbyexamples.com").setMaster("local[1]")
+    val sparkContext = new SparkContext(conf)
+	
+	val rdd = sparkContext.textFile("/src/main/resources/text/alice.txt")
+	
+	SparkSession can be used in replace with SQLContext and HiveContext.
+	Since Spark 2.0 SparkSession has been introduced and became an entry point to start programming with DataFrame and Dataset.
+	
+	val spark = SparkSession.builder()
+      .master("local[1]")
+      .appName("SparkByExamples.com")
+      .getOrCreate();
+	  
+39) command to change the column name and data type of the column in HIVE
+
+    alter table table_name change id custid string;
+	
+40) Sqoop Optimization
+
+    a) --fetch-size = <n> : Where <n> represents the number of entries that Sqoop must fetch at a time. Default is 1000.
+		Increase the value of the fetch-size argument based on the volume of data that need to read. Set the value based on the available memory and bandwidth.
+		
+		sqoop import 
+		--connect jdbc:mysql://mysql.example.com/sqoop \
+		--username sqoop \
+		--password sqoop \
+		--table cities \
+		--fetch-size=n
+		
+	b) Increase mappers size: By using the -m or --num-mappers parameter we can set the degree of parallelism in Sqoop.
+	  Specifies number of map tasks that can run in parallel. Default is 4. To optimize performance, set the number of map tasks to a value lower than the maximum number of connections that the database supports.
+	  
+	  sqoop import  
+		--connect jdbc:mysql://mysql.example.com/sqoop \
+		--username sqoop \
+		--password sqoop \
+		--table cities \
+		--num-mappers 10
+	  
+	c) split-by : The --split-by parameter splits the column data uniformly on the basis of the number of mappers specified. 
+	   Note: If you do not specify a column name, Sqoop splits the work units based on the primary key.
+	   
+	   sqoop import  
+		--connect jdbc:mysql://mysql.example.com/sqoop \
+		--username sqoop \
+		--password sqoop \
+		--table cities \
+		--split-by city_id
+	   
+	d) Importing Data Directly into Hive : Use Direct instead of JDBC.
+	   Sqoop has direct support only for MySQL and PostgreSQL.
+	   
+	   sqoop import \   
+		--connect jdbc:mysql://mysql.example.com/sqoop \
+		--username sqoop \
+		--password sqoop \
+		--table cities \
+		--direct
+	   
+	e) --batch : Batching means that related SQL statements can be grouped into a batch when you export data.
+	
+	    sqoop export   
+		--connect jdbc:mysql://mysql.example.com/sqoop \
+		--username sqoop \
+		--password sqoop \
+		--table cities \
+		--export-dir /data/cities \
+		--batch
+	
+	f) Custom Boundary Queries
+		As seen before split-by uniformly distributes the data for import. If the column has non-uniform values, boundary-query can be used if we do not get the desired results while using the split-by argument alone.
+		Ideally, we configure the boundary-query parameter with the min(id) and max(id) along with the table name.
+		
+		sqoop import \
+		--connect jdbc:mysql://mysql.example.com/sqoop \
+		--username sqoop \
+		--password sqoop \
+		--query 'SELECT normcities.id, \
+						countries.country, \
+						normcities.city \
+						FROM normcities \
+						JOIN countries USING(country_id) \
+						WHERE $CONDITIONS' \
+		--split-by id \
+		--target-dir cities \
+		--boundary-query "select min(id), max(id) from normcities"
+		
+----------------------------
+41) Handling NULL values ***
+----------------------------
+
+1) Drop Null values from the data  -- ex: val df1 = df.filter("gender is not null")
+2) replace null value with another value -- df.na.fill("0","gender")
+                                         -- df.withColumn("gender",when(col("gender").isnull,0).otherwise(col("gender")))
+										 
+#Replace 0 for null for all integer columns
+df.na.fill(value=0).show()
+
+#Replace 0 for null on only gender column 
+df.na.fill(value=0,subset=["gender"]).show()
+
+42) Spark Query plans
+    df.explain() -- you will get the physical plan of the dataframe and analyze the same.
+	
+	1) check for Exchange in the explain plan, which means shuffling the data between nodes. which is expensive operation.
+	2) project is nothing but select statement.
+	
+	
+43) Identifying corrupted files in HDFS
+
+	Hadoop fsck (file system check) command is a great to inspect the health of the filesystem.
+
+    If you just want to get your HDFS back to normal state and don't worry much about the data, then
+	
+	1) hdfs fsck /  -will give you a report like below which will help you check the health of the cluster and give you a count of the number of corrupt blocks but it doesn’t provide you with the list of files which are corrupted.
+	2) hdfs fsck -list-corruptfileblocks  will list the files with corrupted blocks
+	3) hdfs dfs -rm /ranger/audit/hdfs/20200813/hdfs_ranger_audit_ms1.hirw.com.log 
+	   or
+	   This will delete the corrupted HDFS blocks:
+	   hdfs fsck / -delete
+	   
+	
+	fsck command does not correct the errors it detects. Normally NameNode automatically corrects most of the recoverable failures.
+	
+	
+	
+-----SQL salary questions-----
+1. top 3  salary of each department from department table
+
+yo have to first use the row number function over salary in desc order to 	to attacht the row nu,ber in the basis of salary
+2. use partition by to partition the row nu,ber value by department 
+
+select * from 
+(select d.* , row number() over (partition by dept  salary desc) as rn  from dept d) t1
+where t1.rn <=3
+
+
+2. query to find nth highest salary
+--order the table by desc order by salary and select top 3 
+-- write outer query with selecting top1 salary asending order 
+
+select top 1 salary from 
+select TOP 3 salary from emp order by salary desc
+order by salary asc
+
+other approarch :-
+using max function
+--to fetch second highest salary 
+select max(salary) from emp where salary < (select max(salary ) from emp)--> 3rd highest 
+
+--2nd highest 3 inner queries
+select max(salary) from emp where salary < (select max(salary ) from emp where salary < (select max(salary) from emp))
+
+
+--by using limit clause 2nd highest salary  
+ limit syantax is limit 2,4 ->fetch after 2nd position , 4 means fetch 4 rcords
+ 
+select salary from emp e order by salary dec limit n-1 ,1 
+ select salary from emp e order by salary desc limit 1,1 
+ 
+ if you have duplicate use distinct 
+  select distinct salary from emp e order by salary desc limit 1,1 
+  
+  
+---with out limit 
+
+select salary from emp where n-1 = (select count(distinct salary ))  
+
+
+--using dense rank 
+
+select * from (
+select slary emp name , dense rank() over (orber by salary desc) as rnk from emp ) t1
+where t1.rnk =3
+
+--NOT In <>
+
+select max(salary) from emp where salary no in  (select max salary from emp table )
+ 
