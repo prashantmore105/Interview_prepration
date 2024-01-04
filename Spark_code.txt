@@ -87,6 +87,7 @@ df.show(truncate=False)
 ------------- PIVOT example --------------
 Note :- To use pivot you have to use group by cluase along with aggrigation function,
 otherwise it does not work 
+https://sparkbyexamples.com/pyspark/pyspark-pivot-and-unpivot-dataframe/
 
 pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
 pivotDF.printSchema()
