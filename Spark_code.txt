@@ -85,6 +85,8 @@ df.show(truncate=False)
 
 -------------------------------------------------------------------------------------
 ------------- PIVOT example --------------
+Note :- To use pivot you have to use group by cluase along with aggrigation function,
+otherwise it does not work 
 
 pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
 pivotDF.printSchema()
