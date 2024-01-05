@@ -10,6 +10,17 @@ for i in range(0,len(a)):
     d[a[i]]=b[i]
 # printing result
 print("Flattened dictionary : " + str(d)) 
+-----------------------------------------------------------------------
+test_dict = {'month' : [1, 2, 3],'name' : ['Jan', 'Feb', 'March']}
+#output = {1: 'Jan', 2: 'Feb', 3: 'March'}
+d=dict()
+val=list(test_dict.values())
+print(val)
+a=val[0]
+b=val[1]
+for x in range(len(a)) :
+    d[a[x]]=b[x]
+print(d) 
 ------------------------------------------------
 test_dict = {'month' : [1, 2, 3],
              'name' : ['Jan', 'Feb', 'March']}
