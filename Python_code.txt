@@ -762,3 +762,14 @@ final_str2 = "{}{}{}{}{}".format(new_str1,'(', new_str,')', new_str2)
 print(final_str2)	
 
 -------------------------------------------------------------------------------
+#new logic developd (make IMF in capital letter)
+mystr = "I am Faisal(imf). I am in banagalore."
+new_s1 = mystr.split('(')[1]
+new_s2=new_s1.split(')')[0].upper()
+print(new_s2)
+new_str1 = mystr.split('(')[0]
+new_str2 = mystr.split(')')[1]
+print(new_str1)
+print(new_str2)
+final_str = new_str1+'('+new_s2+')'+new_str2
+print(final_str)
