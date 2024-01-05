@@ -674,16 +674,18 @@ for x in o_list:
 print(newlist)
 ---------- OR----------
 from collections import Counter
-mylist = [1,2,1,2,1,0,1,0,2,0,2,0]
-o_list =[1,0,2]
+mylist = [1,2,1,2,1,0,1,0,2,0,2,0,0]
+seq_list =[1,0,2]
+#output =[1, 1, 1, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2]
 newlist = []
 mydict = Counter(mylist)
-
-for x in o_list:
+print(mydict)
+for x in seq_list:
+    print(x)
+    print(range(mydict[x]))
     for i in range(mydict[x]):
         newlist.append(x)
-    
-print(newlist)    
+    print(newlist)    
 ---------------------------------------------------
 # Input = [4,5,0,-1,-2, 2,5,-1,-4, 2,0,-1,-2]
 # output = 10
