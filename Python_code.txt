@@ -1,3 +1,8 @@
+NOTE:-What does end () do in Python?
+What is Python End Parameter? - Scaler Topics
+Python end is used for the addition of any string at the end of the output of the python print statement
+
+
 ------------#output = {1: 'Jan', 2: 'Feb', 3: 'March'} --------------------
 test_dict = {'month' : [1, 2, 3],'name' : ['Jan', 'Feb', 'March']}
 #output = {1: 'Jan', 2: 'Feb', 3: 'March'}
