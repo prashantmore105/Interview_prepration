@@ -74,6 +74,14 @@ print(mydict)
 mar = [29,71,95,32,71]
 print(list(sorted(set(mar)))[-2])
 
+--------------dismantld the logic for understnading----------------------
+mar = [29,71,95,32,71]
+print(mar.sort())
+mar.sort()
+print(mar)
+a=sorted(set(mar))[-2]
+print(a)
+
 -------------------convert list to dictionary-------------------
 #Stud: ['Kalyan','Krish','Ashu','Abdul']
 #Marks: [29,71,95,32]
