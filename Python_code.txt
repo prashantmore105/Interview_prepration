@@ -322,6 +322,15 @@ words = str.split(' ')
 rev_str = ' '.join(reversed(words))
 
 print(rev_str)
+#reverse the string entorely word by word
+for i in reversed(str) :
+    print(i , end="")
+
+
+print("\r")
+#reverse the list 
+vowels = ['a', 'e', 'i', 'o', 'u'] 
+print(list(reversed(vowels)))
 --------------------------------------------------------------------------
 read text file and count lines, words, characters, paragraph-------------------------
 
