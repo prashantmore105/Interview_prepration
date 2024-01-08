@@ -317,6 +317,8 @@ output : you are how-------------
 
 str = 'How are you'
 words = str.split(' ') 
+#join syntax is to use something as a seprator then jon 
+#in this case ' ' (space) as a seprator
 rev_str = ' '.join(reversed(words))
 
 print(rev_str)
