@@ -310,6 +310,15 @@ for i in range(-4,4):
     print(i, end=',')
 
 output = -4,-3,-2,-1,0,1,2,3,
+___________________________________________________________
+#print random chnaract letters
+import string
+string.ascii_letters  #this will contain all the charcters in caps and small 
+import random
+#a='ABCDE'
+print(random.choice(string.ascii_letters))
+
+
 --------------------------------------------------------
 Reverse of words from sentense or string
 input : How are you
