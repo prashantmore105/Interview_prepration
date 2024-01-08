@@ -564,6 +564,16 @@ res_dct = {mylist[i]: mylist[i + 1] for i in range(0, len(mylist), 2)}
 sorteddict = OrderedDict(sorted(res_dct.items()))
     
 print(sorteddict)  
+----------------OR--------------------------------
+from collections import OrderedDict
+mylist = ['a', 1, 'c', 3, 'b', 2]
+res_dct=dict()
+for i in range(0, len(mylist), 2):
+    print(i)
+    res_dct[mylist[i]] =  mylist[i + 1] 
+    
+print(res_dct)  
+
 
 ---------------------------------------------------------------------------------------
 In given sentense every letter occurence ----
