@@ -1,0 +1,151 @@
+-------Count of Null, None, NaN of All DataFrame Columns----------------------------
+from pyspark.sql.functions import col,isnan, when, count
+df.select([count(when(isnan(c) | col(c).isNull(), c)).alias(c) for c in df.columns]
+   ).show()
+
++----+-----+------+
+|name|state|number|
++----+-----+------+
+|   0|    1|     3|
++----+-----+------+
+
+----------- rename all column name with prefix ----------------------
+import pyspark.sql.functions as F
+def rename(emp_df):
+    for x in emp_df.columns:
+        emp_df = emp_df.withColumnRenamed(x, 'col_'+x)
+    return emp_df
+
+new_df = rename(emp_df)
+new_df.display()
+--------------------------------------------------------------------------------
+from pyspark import SparkContext, SparkConf
+from pyspark.sql import HiveContext
+ 
+#Main module to execute spark code
+if __name__ == '__main__':
+    conf = SparkConf() #Declare spark conf variable\
+    conf.setAppName("Read-and-write-data-to-Hive-table-spark")
+    sc = SparkContext.getOrCreate(conf=conf)
+ 
+    #Instantiate hive context class to get access to the hive sql method  
+    hc = HiveContext(sc)
+ 
+    #Read hive table in spark using .sql method of hivecontext class
+    df = hc.sql("select * from default.hive_read_write_demo")
+ 
+    #Display the spark dataframe values using show method
+    df.show(10, truncate = False)
+-----------------------------------------------------------------------
+# word count----------
+rdd = sc.textFile('path')
+words = rdd.flatmap(lambda line: line.split(' '))
+wordcount = words.map(word: (word,1)).reduceByKey(lambda a,b:a+b)
+wordcount.saveAsTextFile('path')
+
+--------------------------------------------------------------------------------
+Input dataframe----
+c1 c2
+1 a|b
+2 a|e|d
+c f
+output dataframe----
+c1 c2
+1 a
+1 b
+2 a
+2 e
+2 d
+c f
+-------
+
+df = df.selelct(c1, explode(constr(c2)))
+
+def constr(s):
+	val = s.split('|')
+	return val
+--------------------------------------------------------------------------	
+dfPersist = df.persist(StorageLevel.MEMORY_ONLY)
+dfPersist.show(false)
+dfPersist = dfPersist.unpersist()
+--------------------------------------------------------------------------
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import expr
+#Create spark session
+data = [("Banana",1000,"USA"), ("Carrots",1500,"USA"), ("Beans",1600,"USA"), \
+      ("Orange",2000,"USA"),("Orange",2000,"USA"),("Banana",400,"China"), \
+      ("Carrots",1200,"China"),("Beans",1500,"China"),("Orange",4000,"China"), \
+      ("Banana",2000,"Canada"),("Carrots",2000,"Canada"),("Beans",2000,"Mexico")]
+
+columns= ["Product","Amount","Country"]
+df = spark.createDataFrame(data = data, schema = columns)
+df.printSchema()
+df.show(truncate=False)
+
+-------------------------------------------------------------------------------------
+------------- PIVOT example --------------
+
+pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
+pivotDF.printSchema()
+pivotDF.show(truncate=False)
+
+----------OR with prformance improvement------------
+
+countries = ["USA","China","Canada","Mexico"]
+pivotDF = df.groupBy("Product").pivot("Country", countries).sum("Amount")
+pivotDF.show(truncate=False)
+
+------------- Or ----------------------------
+
+pivotDF = df.groupBy("Product","Country") \
+      .sum("Amount") \
+      .groupBy("Product") \
+      .pivot("Country") \
+      .sum("sum(Amount)") \
+pivotDF.show(truncate=False)
+--------------------------------------------------------------------------
+------------- Unpivot ----------------
+
+from pyspark.sql.functions import expr
+unpivotExpr = "stack(3, 'Canada', Canada, 'China', China, 'Mexico', Mexico) as (Country,Total)"
+unPivotDF = pivotDF.select("Product", expr(unpivotExpr)) \
+    .where("Total is not null")
+unPivotDF.show(truncate=False)
+unPivotDF.show()
+
+---------- Pivot & Unpivot example ---------------
+
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import expr
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+data = [("Banana",1000,"USA"), ("Carrots",1500,"USA"), ("Beans",1600,"USA"), \
+      ("Orange",2000,"USA"),("Orange",2000,"USA"),("Banana",400,"China"), \
+      ("Carrots",1200,"China"),("Beans",1500,"China"),("Orange",4000,"China"), \
+      ("Banana",2000,"Canada"),("Carrots",2000,"Canada"),("Beans",2000,"Mexico")]
+
+columns= ["Product","Amount","Country"]
+df = spark.createDataFrame(data = data, schema = columns)
+df.printSchema()
+df.show(truncate=False)
+
+pivotDF = df.groupBy("Product").pivot("Country").sum("Amount")
+pivotDF.printSchema()
+pivotDF.show(truncate=False)
+
+pivotDF = df.groupBy("Product","Country") \
+      .sum("Amount") \
+      .groupBy("Product") \
+      .pivot("Country") \
+      .sum("sum(Amount)")
+pivotDF.printSchema()
+pivotDF.show(truncate=False)
+
+""" unpivot """
+unpivotExpr = "stack(3, 'Canada', Canada, 'China', China, 'Mexico', Mexico) as (Country,Total)"
+unPivotDF = pivotDF.select("Product", expr(unpivotExpr)) \
+    .where("Total is not null")
+unPivotDF.show(truncate=False)
+
