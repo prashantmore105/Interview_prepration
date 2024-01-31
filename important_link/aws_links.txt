@@ -1,0 +1,17 @@
+
+
+---------------------------step function-------------------------------------------------
+https://reflectoring.io/getting-started-with-aws-step-functions-tutorial/
+
+https://youtu.be/-zm-1egM3hY?si=umZWctCYB3m2quBD
+
+--------------------------AWS questions-------------------------------
+
+https://www.projectpro.io/article/aws-glue-interview-questions-and-answers/761
+
+https://abhayksingh.com/aws-glue-expert-interview-preparation-top-10-questions-and-answers/
+
+
+https://moderntechnologist.com/aws-glue-questions-answers/#Describe_the_AWS_Glue_Architecture
+ 
+https://jainsaket-1994.medium.com/simplifying-aws-glue-job-failure-notifications-with-sns-a-step-by-step-guide-e2c801c4a2dd
