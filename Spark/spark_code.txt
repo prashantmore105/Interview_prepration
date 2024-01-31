@@ -1,5 +1,17 @@
 -------Count of Null, None, NaN of All DataFrame Columns----------------------------
 from pyspark.sql.functions import col,isnan, when, count
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col,isnan, when, count
+#import pandas as pd 
+# Create SparkSession 
+spark = SparkSession.builder \
+      .master("local[1]") \
+      .appName("SparkByExamples.com") \
+      .getOrCreate() 
+      
+print(spark)  
+df=spark.read.option("header",True).csv("C:/Users/prashantm5.MUMBAI1/Downloads/userdata1.csv")
+#this is called comprehensive list 
 df.select([count(when(isnan(c) | col(c).isNull(), c)).alias(c) for c in df.columns]
    ).show()
 
