@@ -1,0 +1,16 @@
+------------------------is Dataframe immutable or not-----------------------
+
+As per Spark Architecture DataFrame is built on top of RDDs which are immutable in nature, Hence Data frames are immutable in nature as well.
+
+Regarding the withColumn or any other operation for that matter, when you apply such operations on DataFrames it will generate a new data frame instead of updating the existing data frame.
+
+However, When you are working with python which is dynamically typed language you overwrite the value of the previous reference. Hence when you are executing below statement
+
+df = df.withColumn()
+It will generate another dataframe and assign it to reference "df".
+
+In order to verify the same, you can use id() method of rdd to get the unique identifier of your dataframe.
+
+df.rdd.id()
+
+will give you unique identifier for your dataframe.
