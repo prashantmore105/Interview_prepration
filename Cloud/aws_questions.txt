@@ -79,7 +79,24 @@ https://spacelift.io/blog/terraform-vs-cloudformation
   --Airflow
 6. Data migration 
 
-8. GLUE VS EC2 instance
+8. GLUE VS EMR
+Use case , requirements and preferences 
+focus was on the ETL Tasks ,and we prefered the serverless and manged soluction  
+
+1. serverless manged ETL .dont hav eto provison and mange the underlying infrastructure.
+2. Pay as go model with Pay for resources as used for ETL jobs 
+   leads to cost saving because you are paying for resources that are consumed .
+3. integration with other aws services .
+3. scalability :-scales autimatically based on size of data and transformation   
+   
+EMR
+ 1. Manage the infra and do the configuration 
+2. variable cost and depenf]ds on the resources provisined  
+3. scalalbility :- more cpontrol over cluster size and configurations
+
+IF focous in on ETL taksks and preference is a sverless and mangaged soluction glu is is the right fit .
+
+more fexibility on big data processing environment using various computing framework thn emr
 9. Redshift 
 --Amazon Redshift uses SQL to analyze structured and semi-structured data across data warehouses, 
    operational databases, and data lakes, using AWS-designed hardware and machine learning to deliver 
@@ -87,4 +104,66 @@ https://spacelift.io/blog/terraform-vs-cloudformation
 -- data is stored as columanar storage
 -- supports sql tool to retival of data 
 --sql queries and stored procedure works 
+
 10.Step function vs glue workflow
+
+11. spark datarame vs glue dynamic frame
+--A DynamicFrame is similar to a DataFrame, except that each record is self-describing, 
+  so no schema is required initially. Instead, AWS Glue computes a schema on-the-fly
+-- You can convert DynamicFrames to and from DataFrames after you resolve any schema inconsistencies.
+-- main feature is job bookmark and read writr ablity and integration with aws 
+https://aws.amazon.com/blogs/big-data/optimize-memory-management-in-aws-glue/
+
+
+12.
+aws
+---------
+>S3 storage capcity  5 TB
+>S3 by default files can be store 1000, aws support but in total 5 TB
+>Lambda 15 duration after that timeout> small logics
+>Lambda layer to  add libraries or dependent packages
+>event bridge for scheduling
+>cross account> trust relation need be updated
+>glue default 48 hours after timeout
+>crwaler to scan s3 data and table in catalog
+>clssifiers data format identification
+>athena we can create table without any s3 location in athena all are external tables
+>workflow is for define logical steps of the jobs >crawler, glue job
+>through trigger we can add crawler or glue job
+>emr bigdata ware house platform in emr 
+>redhshit is data warehouse >regluar>external>temporary tables> temporary with external tables  
+
+13 . glue read and write df code
+--read
+df_all = glueContext.create_dynamic_frame.from_catalog(database=raw_catalogue_db_name,
+                                                       table_name=table_with_source,
+                                                       push_down_predicate=f"(year >= '{predicate_year}')",
+                                                       transformation_ctx="datasource0").toDF() 
+													   
+--write
+datasink = glueContext.write_dynamic_frame.from_options(frame=datasource0,
+                                                    connection_type="s3",
+                                                     connection_options={"path": path,
+                                                      "partitionKeys": [
+                                                       "year", "month",
+                                                        "day"]},
+                                                        format="parquet",
+                                                         transformation_ctx="datasink")
+
+
+14. lambda code
+import os,boto3,logger													   \
+region=os.region["AWS region"]
+
+def lambda_handler(event)
+	glue=boto3.client(servicename="glue" ,region =awsregion )
+	
+	wf_name=str(event["wf_name"])
+	is_phi=
+	job_id=
+	
+	glue.update_workflow(name ="wf_nme" ,runpro[perties="" )
+	responce=glue.start_workflow("name")
+	logger.info("started successfully")
+	
+	
