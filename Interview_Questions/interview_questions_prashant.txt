@@ -1,0 +1,229 @@
+1.
+Define class A that has instance variables Height and weight . 
+Define Class B that inherits from Class A and has instance variable name. 
+also pass height and weight in init method to make instance of class A.
+
+2.
+Define a function sum_of_digits that sums the  digits inside any string provided. 
+ex: - if string is "12ndbhi43ii23b2ii23b2ibi324bp2i" we will get sum as (12+43+23+2+23+2+324+2)
+
+str="12ndbhi43ii23b2ii23b2ibi324bp2i"
+str=retun_sum(str)
+print(str)
+def retun_sum(str):
+    sum=0
+	list1= re.findall('regex','str')
+	list1=[12,43,23..]
+	for i in list1:
+		sum += i		
+    return sum	
+
+
+3.
+EMP( emp_id, manager_id, city) 
+1,1,noida 
+2,1,delhi ,
+EMP_DETAILS(emp_id, project_id, salary)
+
+select empid,manger id from emp group by manger_id  
+
+select * from 
+(select empid,salary , dense_rnk() over (partitoned bu salary irder by desc) rn  from emp_details ) where rn =5
+
+EMP_DETAILS.select(empid ,salary).()
+
+4.
+JP
+ -- project related questions
+ --crawler use
+ -- glue job resource allocation
+ -- why glue andwhy not EMR
+ --how we did sceduling 
+ -- lambda function 
+ -- s3 life cycle management 
+ --s3 data acess managment
+ -- aws glue and glue studio
+ -- secrte manger and kms key 
+ -- step function 
+ -- lambda code and glue code 
+     -- spark logic in lambda code 
+  -- redshift 
+     -- connectiton with glue
+     -- stored procedure working
+     --- calling stored procedure
+     -- connect redshift with reporting tools and quicksight 
+     -- performmance tuning for redshift
+
+--  use case to create the datalake /data warehouse
+    -- legacy system has data how do you bring that data to aws enviornment
+   -- prerequieist 
+   --  design    
+
+
+------------------------------------------------------------------------------------
+5.how to read json in spark
+
+[{
+name:Prashant,			
+age: 20,
+city: Mumbai 
+},{
+name:ABC,			
+age: 20,
+city: Mumbai 
+}]
+
+df=spark,read.format("json").("path")l
+
+-------------------------------
+def udffunction(n) in spark 
+
+
+------python------------------------
+dict1={key:value1,key2,vlaue2}
+
+print(dict["key"])
+dict1.get_values()
+list1=["a","b"]
+tuple1=("1","2","3")
+set1={{"1","2","3"}}
+
+iterating the collectins in python 
+
+
+-----------------------------------------------
+6. type 2 
+
+from_date ,to_date ,active flag  id  idol
+2023-03-22 ,2024-03-21  F
+2024-04-22 ,            T
+
+
+-----------------------duplicate records in sql-----
+7. select * from (
+select id,row_number() over (partition by id order by id) as rn from tableB 
+) where rn >1
+
+select * from (
+select id,row_number() over (partition by id order by id) as rn from tableB 
+) where rn >1
+
+------------------------------------------------------------------
+
+vowels
+unit test, pytest,marktest (assert true false)
+
+data modeling
+system designing draw.io  --Done
+end to end flow explanation :- questions  --DOe
+large data to handle in spark:
+  --partition split
+  -- load data in batches (lower bound ,uperbound limit)
+  -- parallesim using multi threads pool
+  -- resource alocation
+  -- persist in memory or disk 
+  --handle data skew issues (salting techniques to ad random keys/prefix to ditribute them evenly)
+  
+small data problem :
+-- broadcast the small table to join 
+-- optimized table :- 
+--salting technique
+--cache ,persisting 
+--adjust partition to avoid he over head
+--colasing the files 
+--small text files can be read with wholetextfile() method insted of textfile()
+other than RDBMS which sources you can handle 
+   -- reading which is better format avro vs parquet --Done
+    -- partition
+    -- multi processing ,thread pool
+
+glue code --Done
+lambda code  --Done
+teraform scripts (cloud formation,sdk,cdk)
+ETL jobs tarike 
+   -- glue  --EMR  -- data pipeline
+create and write dynamic data frame ration code /parmeters  --done
+dynamic framw vs spark dataframe difference  --Done
+TYPE 1 and type 2
+How to handle sesitive information --Done
+  -- iam roles 
+  -- bucket policies 
+  -- protegrity tool
+
+
+spark architecture
+adaptive query --optimizaton techiqiue ,uses run time statics to selct the query pkan 
+spark optimizer -- responcible for tranforming  sql queries and dataframe into optimized execution plan
+skew issue  -- imbamace in distribution of data in partitions ,on epartition contain more data than others
+          un evenly distibuted keys across the joins.
+yarn and cluster architecture
+
+teramform vs cloud formtion diffrenec 
+
+
+df_all = glueContext.create_dynamic_frame.from_catalog(database=raw_catalogue_db_name,
+                                                       table_name=table_with_source,
+                                                       push_down_predicate=f"(year >= '{predicate_year}')",
+                                                       transformation_ctx="datasource0").toDF() 
+
+
+conf=SparkConf();
+conf.set("sparksql.parquet.mergeschema","true")
+
+sc=sparkcontext(conf=conf)
+gluecontext=gluecontext(sc)
+
+delta columm= 2024-03-31 
+2024-04-01 
+df=glauecontext.crate dyname_frame.from_cataloge(database='' ,table_name='' ,predicate_pushdown=f"{year >= {2024}}"
+                                         addtional_options={mergeschema=""true} )
+
+
+datasink = glueContext.write_dynamic_frame.from_options(frame=datasource0,
+                                                                                connection_type="s3",
+                                                                                connection_options={"path": path,
+                                                                                                    "partitionKeys": [
+                                                                                                        "year", "month",
+                                                                                                        "day"]},
+                                                                                format="parquet",
+                                                                                transformation_ctx="datasink")
+
+
+datasink=write_dynamic_frame.from_options(frame='',connection type='s3', connection_options='path=,partitionkeys='
+                                                                                        format='',transformation_ctx)
+
+
+import os,boto3,logger													   \
+region=os.region["AWS region"]
+
+def lambda_handler(event)
+	glue=boto3.client(servicename="glue" ,region =awsregion )
+	
+	wf_name=str(event["wf_name"])
+	is_phi=
+	job_id=
+	
+	glue.update_workflow(name ="wf_nme" ,runpro[perties="" )
+	responce=glue.start_workflow("name")
+	logger.info("started successfully")
+
+													   
+													   
+def lambda_handler(event)
+  glue=boto3.client(servicename="glue" ,region="")
+  
+  wf_name= str(event['wf_name']);
+  job_id= 
+  is_phi =?
+  
+  glue.updateworkflow(workflowname='' ,defaultproperties )
+  glue.start_workflow('wf_name')
+  
+  
+Jira boarding :
+ 1. high level stories
+     5 pointer story for 2 week 
+     
+backlog to new sprint 	 
+
+----------------------------------------------------------------------------------
