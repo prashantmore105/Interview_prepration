@@ -1,0 +1,753 @@
+------------#output = {1: 'Jan', 2: 'Feb', 3: 'March'} --------------------
+test_dict = {'month' : [1, 2, 3],'name' : ['Jan', 'Feb', 'March']}
+#output = {1: 'Jan', 2: 'Feb', 3: 'March'}
+print("The original dictionary is : " + str(test_dict))
+x=list(test_dict.values())
+a=x[0]
+b=x[1]
+d=dict()
+for i in range(0,len(a)):
+    d[a[i]]=b[i]
+# printing result
+print("Flattened dictionary : " + str(d)) 
+------------------------------------------------
+test_dict = {'month' : [1, 2, 3],
+             'name' : ['Jan', 'Feb', 'March']}
+print("The original dictionary is : " + str(test_dict))
+res = dict(zip(test_dict['month'], test_dict['name']))
+print("Flattened dictionary : " + str(res))
+
+-------------- print the value when given occurance ----------------
+from collections import Counter
+abc = [200,400,400,100,100,100,500,500,500,500]
+occur = Counter(abc)
+
+def occurance(n):
+    for x in occur:
+        if occur[x]==n:
+            print(x)
+            
+occurance(3)
+------------------------------------
+abc = [200,400,400,100,100,100,500,500,500,500]
+
+def occur(n):
+    mydict = {}
+    for x in abc:
+        if x in mydict:
+            mydict[x]+=1
+        else:
+            mydict[x]=1
+    for y in mydict:
+        if mydict[y] == n:
+            print(y)
+    print('NA')    
+    
+occur(4)  
+---------- letter occurs --------------------
+mystr = 'missisipi'
+mydict = {}
+for x in mystr:
+    if x in mydict:
+        mydict[x]+=1
+    else:
+        mydict[x]=1
+
+print(mydict)
+------------- 2nd highest number from list ----------------
+mar = [29,71,95,32,71]
+print(list(sorted(set(mar)))[-2])
+
+-------------------convert list to dictionary-------------------
+#Stud: ['Kalyan','Krish','Ashu','Abdul']
+#Marks: [29,71,95,32]
+#Passing_marks = 35
+#Output: {'Kalyan':'Fail','Krish':'Pass','Ashu':'Pass','Abdul':'Fail'}
+
+stu = ['Kalyan','Krish','Ashu','Abdul']
+mar = [29,71,95,32]
+Passing_marks = 35
+#Output: {'Kalyan':'Fail','Krish':'Pass','Ashu':'Pass','Abdul':'Fail'}
+out_dict = {}
+for x in range(len(stu)):
+    if mar[x] < Passing_marks:
+        out_dict[stu[x]] = 'Fail'
+    else:
+        out_dict[stu[x]] = 'Pass'
+		
+print(out_dict)
+-------------------------reverse list-------------------------------------
+reverse order a list of numbers without built-in sort, min, max function-------
+
+data_list = [-5, -23, 5, 0, 23, -6, 23, 67]
+new_list = []
+
+while data_list:
+    minimum = data_list[0]
+    for x in data_list:
+        if x > minimum:
+            minimum =x
+    new_list.append(minimum)
+    data_list.remove(minimum)
+        
+print(new_list)
+
+---------------------------------------------------
+Reverse list------------
+
+data_list = [-5, -23, 5, 0, 23, -6, 23, 67]
+
+def rev(l):
+    return l[:: -1]
+    
+print(rev(data_list))
+
+----- OR ----
+data_list.reverse()
+
+print(data_list)
+
+--------------------Palimdrome------------------------------------------------
+
+def isPelimdrome(s):
+    rev=''.join(reversed(s))
+    if(s==rev):
+        return True
+    else:
+        return False
+        
+print(isPelimdrome('madam'))
+
+------------------------------------------------
+duplicate values in list ------
+
+data_list = [5, -23, 5, 0, 5, 23, -6, 23, 67, 5]
+
+print(list([x for x in data_list if data_list.count(x)>1]))
+
+------ or -----
+data_list = [5, -23, 5, 0, 5, 23, -6, 23, 67, 5]
+new_list=[]
+dup_list = []
+for x in data_list:
+    if x not in new_list:
+        new_list.append(x)
+    else:
+        print(x, end=' ')
+#        dup_list.append(x)
+#print(dup_list)
+
+----------------------------------------------------
+Count no of words --------
+
+s = ''' i am having very nice day
+Bangalore is good place'''
+print(len(s.split()))
+
+-------------------------------------------------
+word count in python ----------
+
+
+def wordCount(str):
+    counts = dict()
+    words = str.split()
+    for word in words:
+        if word in counts:
+            counts[word] +=1
+        else:
+            counts[word]=1
+    return counts        
+    
+        
+print(wordCount('''The Darwin Medal is one of the medals awarded by the Royal Society of 
+London for "distinction in evolution, biological diversity and developmental, 
+population and organismal biology".'''))   
+
+------------------------------------------------------------
+word count in pyspark ----------
+
+import sys
+from pyspark import SparkContext, SparkConf
+if __name__ == "__main__":
+	# create Spark context with necessary configuration
+	sc = SparkContext("local","PySpark Word Count Exmaple")
+	
+	# read data from text file and split each line into words
+	words = sc.textFile("D:/workspace/spark/input.txt").flatMap(lambda line: line.split(" "))
+	
+	# count the occurrence of each word
+	wordCounts = words.map(lambda word: (word, 1)).reduceByKey(lambda a,b:a +b)
+	
+	# save the counts to output
+	wordCounts.saveAsTextFile("D:/workspace/spark/output/")    
+	
+----------------------------------------------------------------------
+Print next 2nd value from day list------------
+
+Day_list = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+def func(day):
+    val = Day_list.index(day)+2
+    if val < len(Day_list):
+        print(Day_list[val])
+    else:
+        print(Day_list[val%len(Day_list)])
+
+func('Wednesday')
+
+---------------------------------------------------------------------------
+Return month by pasing month number ---------
+
+Month_list = ['January', 'Febrauary', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+def func(num):
+    return Month_list[num%len(Month_list)-1]
+
+print(func(19))
+
+----------------------------------------------------------------
+Number of times every list value occures ------------
+
+from collections import Counter
+a_list = ['a', 'b', 'c', 'a']
+print(Counter(a_list))
+
+----------------------------------------------------------------
+Number of times perticular list value occures ------------
+
+a_list = ['a', 'b', 'c', 'a']
+occurance = a_list.count('a')
+print(occurance)
+
+-------------------------------------------------------------------
+Check if string end with 'ion' then replace with 'e' -------------
+
+def ion2e(s):
+    if s[-3:] == 'ion':
+        print(s[:-3]+'e')
+    else:
+        print(s)
+        
+t = 'constitution'
+ion2e(t)
+
+--------- or ------------------
+def ion2e(s):
+    return s[:-3]+'e' if s[-3:]=='ion' else s
+
+t = 'constitution'
+ion2e(t)
+
+-----------------------------------------------------------------------------
+masked last three digit of string with 'xxx' ------------------
+def mask_func(s):
+    print(s[:-3]+'XXX')
+    
+mask_func('constitution')   
+
+-------------------------------------------------------------------------------
+Print patter ----------
+1 
+1 2 
+1 2 3 
+1 2 3 4 
+1 2 3 4 5 
+-------------
+def numpat(n):
+    num=1
+    for i in range(0,n):
+        num=1
+        for j in range(0, i+1):
+            print(num, end=' ')
+            num=num+1
+        print('\r')
+        
+n=5
+numpat(n)
+
+------------------------------------------------------------------------------------
+mylist =[1,3,5,6,8]
+o/p = [1, 4, 8, 11, 14]
+
+mylist =[1,3,5,6,8]
+newlist=[mylist[0]]
+for i in range(0,len(mylist)-1):
+    sum=mylist[i]+mylist[i+1]
+    newlist.append(sum)
+print(newlist)	
+
+-------------create list with range------------------------------------
+my_list = [*range(0,10,2)]   
+print(my_list)
+
+------------create random list--------------------------------------
+import random
+my_list =[]
+for i in range(5):
+    n = random.randint(1,30)
+    my_list.append(n)
+print(my_list)  
+-------------------------------------------
+Range -4,4 
+
+for i in range(-4,4):
+    print(i, end=',')
+
+output = -4,-3,-2,-1,0,1,2,3,
+--------------------------------------------------------
+Reverse of words from sentense or string
+input : How are you
+output : you are how-------------
+
+str = 'How are you'
+words = str.split(' ') 
+rev_str = ' '.join(reversed(words))
+
+print(rev_str)
+--------------------------------------------------------------------------
+read text file and count lines, words, characters, paragraph-------------------------
+
+file = open("D:\\Study\\Python\\test.txt","r")
+read_file = file.read()
+no_of_lines = len(read_file.split('\n'))
+no_of_words = len(read_file.split())
+no_of_char = len(read_file.replace(" ",""))
+print(no_of_char)
+---------------------------------------------------------------------------
+Coalesce another use--------------
+# create new column with non Null values
+tmp = testDF.withColumn('newColumn', coalesce(testDF['id'], testDF['number']))
+
+# Check the content of new df
+tmp.show()
+
++----+------+---------+
+|  id|number|newColumn|
++----+------+---------+
+|   1|     1|        1|
+|   2|     2|        2|
+|null|     3|        3|
+|   4|  null|        4|
++----+------+---------+
+------- or -------------------------------
+sqlContext.sql("select *, coalesce(id, number) as newColumn from temp_table").show()
+
++----+------+---------+
+|  id|number|newColumn|
++----+------+---------+
+|   1|     1|        1|
+|   2|     2|        2|
+|null|     3|        3|
+|   4|  null|        4|
++----+------+---------+
+----------------------------------------------------------------------------------
+Input = 'GreatWork'   output = 'gREATwORK'-------------------------------
+str1='GreatWork'
+new_str =''
+for i in range(len(str1)):
+    if str1[i].isupper():
+        new_str+=str1[i].lower()
+    elif str1[i].islower():
+        new_str+=str1[i].upper()
+    else:
+        new_str+=str1[i]
+        
+print(new_str)  
+
+--------------- or --------------
+mystr = 'GreatWork'
+new_str =''
+for x in mystr:
+    if x.isupper():
+        new_str+= x.lower()
+    elif x.islower():
+        new_str+= x.upper()
+    else:
+        new_str+=x
+print(new_str)    
+
+------------------------------------------------------------------------------
+Input = ['<applyList>','<itemList>']
+output = ['apply','item']------------------------------
+
+my_list = ['<applyList>','<itemList>']
+new_list = []
+for x in my_list:
+    x=x.replace('List','')
+    x=x.replace('<','')
+    x=x.replace('>','')
+    new_list.append(x)
+    print(x, end=',')
+    
+print('\n',new_list)    
+
+-------------- or ------------------------
+my_list = ['<applyList>','<itemList>']
+new_list = []
+replace_char = '<>'
+for x in my_list:
+    x = x.replace('List', '')
+    for i in replace_char:
+        x= x.replace(i,'')    
+    new_list.append(x)
+    print(x, end=',')
+    
+print('\n',new_list)  
+
+---------------------------------------------------------------
+input = ['p5','p1','p8','p4','p2','p8']
+output = ['5', '1', '8', '4', '2', '8']-------------------
+
+ind = ['p5','p1','p8','p4','p2','p8']
+newind = [x.replace('p','') for x in ind]
+print(newind)
+
+----------------------------------------------------------------------
+number of each vovel occurs in given string-------------
+
+from collections import Counter
+mystr = 'faisal'
+newstr = ''
+for x in mystr:
+    if x in 'aeiou':
+        newstr +=x
+
+myval = Counter(mystr)        
+print(myval)   
+
+-------------------------------------------------------------------------
+word count from file----------
+
+from collections import Counter
+file = open("D:\\Study\\Python\\test.txt","r")
+read_data = file.read()
+words = read_data.split()
+count_words = Counter(words)
+print(count_words)
+----------or----------------------
+from collections import Counter
+file = open("D:\\Study\\Python\\test.txt","r")
+print(Counter(file.read().split()))
+
+---------------------------------------------------------------------------------
+Input = "hi hello how are you"
+#Output = ["ih","olleh","woh" , "era" ,"uoy"]-----------------------
+
+str_words= Input.split()
+output = []
+for x in str_words:
+	output.append(x[::-1])
+
+print(output)
+-----------------------------------------------------------------------------------
+#Number prime or not ------------------
+
+def primenum(num):
+	val =0
+	for x in range(2,num):
+		if num%x==0:
+			val = 1
+			
+	if val==0:
+		print('number is prime')
+	elif val==1:
+		print('number is not prime')
+		
+primenum(11)
+-----------------------------------------------------------------
+Input =[1,7,2,5]
+output = [70,10,35,14]  
+
+mylist = [1,7,2,5]
+new_list = []
+
+for j in range(len(mylist)):
+	val =1
+	for i in range(len(mylist)):
+		if i!=j:
+			val = val*mylist[i]
+	new_list.append(val)
+
+print(new_list)
+-----------------------------------------------------------
+---Given a string find out the distinct numbers 
+which are followed by a vowel.If no such number then return ’NA’.
+Fds5edf5i. == 5. Explanation:- 5 is followed by ‘e' which is a vowel again 5 is followed by ‘i' 
+which is a vowel. We need to return only unique ones.-----
+
+mystr = 'Fds5edaf5i'
+new_str = ''
+
+for i in range(len(mystr)):
+	if mystr[i] in 'aeiou':
+		if mystr[i-1].isdigit():
+		    if mystr[i-1] not in new_str:
+			    new_str+=mystr[i-1]
+		else:
+			new_str+= 'NA'
+			
+print(new_str)
+-----------------------------------------------------------------
+---- create dictionary from string where first letter of every wors is key and word is value, also sort dictionry-----
+
+from collections import OrderedDict
+mystr = 'i am faisal in bangalore'
+newdict = {}
+words = mystr.split()
+
+for x in words:
+    for i in range(len(x)):
+        if i==0:
+            newdict.update({x[i]:x})
+#            newdict[x[i]]=x
+
+sorteddict = OrderedDict(sorted(newdict.items()))       
+        
+print(sorteddict) 
+-------------------------------------------------------------------
+---- Convert list to dictionary-----------
+from collections import OrderedDict
+mylist = ['i', 'am', 'faisal', 'in', 'bangalore']
+newdict = {}
+
+for x in mylist:
+    newdict[x]=len(x)
+    
+sortdict = OrderedDict(sorted(newdict.items()))    
+    
+print(sortdict) 
+--------------------------------------------------------------------------
+# input_list = ['a', 1, 'c', 3, 'b', 2]
+# output_dict = {'a': 1, 'b': 2, 'c': 3}-----------------
+
+from collections import OrderedDict
+mylist = ['a', 1, 'c', 3, 'b', 2]
+
+res_dct = {mylist[i]: mylist[i + 1] for i in range(0, len(mylist), 2)}
+
+sorteddict = OrderedDict(sorted(res_dct.items()))
+    
+print(sorteddict)  
+
+---------------------------------------------------------------------------------------
+In given sentense every letter occurence ----
+
+sample_string = "global warming has become a serious issue and people should be concerned about it"
+
+from collections import Counter
+
+occurances = Counter(sample_string)
+print(occurances)
+
+--------------- or ----------------
+mydict = {}
+for x in sample_string:
+	if x!=' ':
+	    if x in mydict:
+	        mydict[x]+=1
+	    else:
+	       mydict[x]=1
+		
+print(mydict)
+
+-----------------------------------------------------------------------------------
+1
+12
+123
+1234
+12345
+---------
+def numpat(n):
+    for i in range(n):
+        num=1
+        for j in range(i+1):
+            print(num, end='')
+            num+=1
+        print('\r')    
+        
+n=5
+numpat(n)
+---------------------------------------------------------
+12345
+1234
+123
+12
+1
+----------
+def numpat(n):
+    rep = n
+    for i in range(n):
+        num=1
+        for j in range(rep):
+            print(num, end='')
+            num+=1
+        print('\r')
+        rep-=1
+        
+n=5
+numpat(n)
+---------------------------------------------------------------------
+54321
+4321
+321
+21
+1
+-------
+def numpat(n):
+    rep = n
+    for i in range(n):
+        num=rep
+        for j in range(rep):
+            print(num, end='')
+            num-=1
+        print('\r')
+        rep-=1
+        
+n=5
+numpat(n)
+-----------------------------------------------------------------------
+54321
+5432
+543
+54
+5
+-----------
+def numpat(n):
+    rep = n
+    for i in range(n):
+        num=n
+        for j in range(rep):
+            print(num, end='')
+            num-=1
+        print('\r')
+        rep-=1
+        
+n=5 
+numpat(n)
+-------------------------------------------------------------
+#input = [1,0,2,1,1,1,0,0,0,1,2,2,2,1,1,1]
+#output = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 2, 2, 2, 2]
+
+mylist = [1,0,2,1,1,1,0,0,0,1,2,2,2,1,1,1]
+zero_list = []
+one_list = []
+two_list = []
+
+for x in mylist:
+    if x == 0:
+        zero_list.append(x)
+    elif x == 1:
+        one_list.append(x)
+    elif x == 2:
+        two_list.append(x)
+        
+one_list.extend(zero_list)  
+one_list.extend(two_list)
+        
+print(one_list)  
+------------------ OR ------------
+o_list =[1,0,2]
+mydict = {}
+newlist =[]
+for x in mylist:
+    if x in mydict:
+        mydict[x] += 1
+    else:
+        mydict[x] = 1        
+print(mydict)  
+
+for x in o_list:
+    for i in range(mydict[x]):
+        newlist.append(x)
+    
+print(newlist)
+---------- OR----------
+from collections import Counter
+mylist = [1,2,1,2,1,0,1,0,2,0,2,0]
+o_list =[1,0,2]
+newlist = []
+mydict = Counter(mylist)
+
+for x in o_list:
+    for i in range(mydict[x]):
+        newlist.append(x)
+    
+print(newlist)    
+---------------------------------------------------
+# Input = [4,5,0,-1,-2, 2,5,-1,-4, 2,0,-1,-2]
+# output = 10
+# Input = [-1,-3,-8,-5]
+# output = -1
+
+#mylist = [4,5,0,-1,-2, 2,5,-1,-4, 2,0,-1,-2]
+mylist = [-1,-3,-8,-5]
+newlist = []
+val =1
+for i in range(len(mylist)):
+    if i<len(mylist)-1:
+        if mylist[i]>=0 and mylist[i+1]>=0:
+            val = val*mylist[i]
+        elif mylist[i]>=0 and mylist[i+1]<0:
+            val = val*mylist[i]
+            newlist.append(val)
+            val=1
+        else:
+            newlist.append(mylist[i])
+    else:
+        if mylist[i]>=0:
+            val = val*mylist[i]
+            newlist.append(val)
+        else:
+            newlist.append(mylist[i])
+        
+newlist.sort(reverse=True)
+
+print(newlist[0])   
+----------------------------------------------------------------------------
+#select only ip address from string
+mystr = '12dsfr234d10.0.0.198dret'
+newstr =''
+
+for i in range(len(mystr)):
+    if mystr[i] == '.':
+        for j in range(i-2,i+8):
+            print(mystr[j], end ='')
+        break   
+---------- or ---------------
+mystr = '12dsfr234d10.0.0.198dret'
+newstr =''
+
+for i in range(len(mystr)):
+    if mystr[i] == '.':
+        for j in range(i-2,i+8):
+            newstr+= mystr[j]
+        break 
+print(newstr)
+---------------------------------------------------------------
+#create list using range command	
+mystr = [*range(10)]
+print(mystr)
+-----------------------------------------------------------------------
+#I am Faisal(imf). I am in banagalore.
+#I am Faisal(IMF). I am in banagalore.
+
+mystr = "I am Faisal(imf). I am in banagalore."
+new_str = mystr[mystr.find('('):mystr.find(')')+1].upper()
+new_str1 = mystr[:mystr.find('(')]
+new_str2 = mystr[mystr.find(')')+1:]
+fina_str = new_str1+new_str+new_str2
+final_str1 = "".join([new_str1, new_str, new_str2])
+final_str2 = "{}{}{}".format(new_str1, new_str, new_str2)
+
+--------OR-----------------------------------------------------
+mystr = "I am Faisal(imf). I am in banagalore."
+new_str = mystr.split('(')[1].split(')')[0].upper()
+new_str1 = mystr.split('(')[0]
+new_str2 = mystr.split(')')[1]
+final_str = new_str1+'('+new_str+')'+new_str2
+final_str1 = "".join([new_str1,'(', new_str,')', new_str2])
+final_str2 = "{}{}{}{}{}".format(new_str1,'(', new_str,')', new_str2)
+
+print(final_str2)	
+
+-------------------------------------------------------------------------------

@@ -1,0 +1,284 @@
+-------------------------
+Apache Spark works in a master-slave architecture where the master is called the “Driver” 
+and slaves are called “Workers”. When you run a Spark application, Spark Driver creates a context that 
+is an entry point to your application, and all operations (transformations and actions) are executed on worker nodes,
+ and the resources are managed by Cluster Manager.
+ 
+ 
+ https://sparkbyexamples.com/spark/what-is-apache-spark-driver/
+ 
+ 
+As soon as we submit our application to Spark job, the driver program is launched with its respective configuration. 
+Then the driver program runs the 
+main() method of your application and creates a SparkContext. Based on your application logic using spark context, 
+transformations and actions are created.
+
+Until an action is called, all the transformations will go into the Spark context in the form of DAG that will 
+create RDD lineage. Once the action is called job is created with multiple tasks. Based on the tasks created, the 
+driver requests the cluster manager to allocate the executors to process these tasks.
+
+Once the resources are allocated, tasks are launched by the cluster manager on the worker nodes along with application 
+configuration and this is done with the help of a class called task scheduler.
+
+The driver will have the metadata of the tasks shared with the executors. Once the tasks are completed by 
+executors the results are shared back with the driver.
+
+------------------------------
+from pysaprk.sql import sparkSession
+
+spark=sparkSession.builder.master[1].appname("test").getorcrete()
+
+data=[1,2,3,4,5,6]
+rs1=spark.sparkContext.parllelize(data)
+
+data = [('James','','Smith','1991-04-01','M',3000),
+  ('Michael','Rose','','2000-05-19','M',4000),
+  ('Robert','','Williams','1978-09-05','M',4000),
+  ('Maria','Anne','Jones','1967-12-01','F',4000),
+  ('Jen','Mary','Brown','1980-02-17','F',-1)
+]
+
+columns = ["firstname","middlename","lastname","dob","gender","salary"]
+df = spark.createDataFrame(data=data, schema = columns)
+
+df = spark.read.csv("/tmp/resources/zipcodes.csv")
+
+from pyspark.sql.functions import mean, col, max
+#Example 1
+df2=pysparkDF.select(mean("age"),mean("salary"))
+             .show()
+#Example 2
+pysparkDF.groupBy("gender") \
+         .agg(mean("age"),mean("salary"),max("salary")) \
+         .show()
+		 
+---------------------------------------------------------------------
+pysparkDF.createOrReplaceTempView("Employee")
+spark.sql("select * from Employee where salary > 100000").show()	
+
+--rname columns
+df.withColumnRenamed("dob","DateOfBirth").printSchema()	 
+---filter -----
+df.filter(df.state == "OH").show(truncate=False)
+# not equals condition
+df.filter(df.state != "OH") \
+    .show(truncate=False) 
+df.filter(~(df.state == "OH")) \
+    .show(truncate=False)
+	
+# Using SQL col() function
+from pyspark.sql.functions import col
+df.filter(col("state") == "OH") \
+    .show(truncate=False) 	
+
+
+# Using SQL Expression
+df.filter("gender == 'M'").show()
+#For not equal
+df.filter("gender != 'M'").show()
+df.filter("gender <> 'M'").show()
+
+# Filter multiple condition
+df.filter( (df.state  == "OH") & (df.gender  == "M") ) \
+    .show(truncate=False)  
+	
+# Using startswith
+df.filter(df.state.startswith("N")).show()
+
+#using endswith
+df.filter(df.state.endswith("H")).show()
+
+#contains
+df.filter(df.state.contains("H")).show()
+
+# like - SQL LIKE pattern
+df2.filter(df2.name.like("%rose%")).show()
+
+
+from pyspark.sql.functions import array_contains
+df.filter(array_contains(df.languages,"Java")) \
+    .show(truncate=False)   	
+------------------------
+select * from (
+select fname,lname ,designaation ,row_number() over (partitoned by salary order by salary desc) rn  from employee) where rn =n
+
+select * from employeedd where ssalary < (select max(salary) from employee)
+
+
+
+
+#Add missing columns 'state' & 'salary' to df1
+from pyspark.sql.functions import lit
+for column in [column for column in df2.columns if column not in df1.columns]:
+    df1 = df1.withColumn(column, lit(None))
+
+df1.printSchema()
+#Add missing column 'age' to df2
+for column in [column for column in df1.columns if column not in df2.columns]:
+    df2 = df2.withColumn(column, lit(None))
+	
+df2.printSchema()
+
+merged_df = df1.unionByName(df2, allowMissingColumns=True)
+
+for columns in df2.columns :
+		if columns not in df1.columns:
+			df2=df2.withcolumn(column,lit(none))
+			
+------------------join syntax---------------------
+
+# Syntax
+join(self, other, on=None, how=None)
+join() operation takes parameters as below and returns DataFrame.
+
+param other: Right side of the join
+param on: a string for the join column name
+param how: default inner. Must be one of inner, cross, outer,full, full_outer, left, 
+       left_outer, right, right_outer,left_semi, and left_anti.
+You can also write Join expression by adding where() and filter() methods on 
+DataFrame and can have Join on multiple columns.	
+
+
+Inner Join: Returns only the rows with matching keys in both DataFrames.
+Left Join: Returns all rows from the left DataFrame and matching rows from the right DataFrame.
+Right Join: Returns all rows from the right DataFrame and matching rows from the left DataFrame.
+Full Outer Join: Returns all rows from both DataFrames, including matching and non-matching rows.
+Left Semi Join: Returns all rows from the left DataFrame where there is a match in the right DataFrame.
+Left Anti Join: Returns all rows from the left DataFrame where there is no match in the right DataFrame.
+
+
+# Inner join
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"inner") \
+     .show(truncate=False)	
+
+# Full outer join
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"outer") \
+    .show(truncate=False)
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"full") \
+    .show(truncate=False)
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"fullouter") \
+    .show(truncate=False)
+	
+# Left outer join
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"left")
+    .show(truncate=False)
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"leftouter")
+    .show(truncate=False)
+	
+# Left semi join
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"leftsemi") \
+   .show(truncate=False)
+
+# Left anti join
+empDF.join(deptDF,empDF.emp_dept_id ==  deptDF.dept_id,"leftanti") \
+   .show(truncate=False)   
+
+Joins are not complete without a self join, Though there is no self-join type available, we can use any of the above-explained join types 
+to join DataFrame to itself. below example use inner self join.   
+# Self join
+empDF.alias("emp1").join(empDF.alias("emp2"), \
+    col("emp1.superior_emp_id") == col("emp2.emp_id"),"inner") \
+    .select(col("emp1.emp_id"),col("emp1.name"), \
+      col("emp2.emp_id").alias("superior_emp_id"), \
+      col("emp2.name").alias("superior_emp_name")) \
+   .show(truncate=False)   
+   
+# Using spark.sql
+
+empDF.createOrReplaceTempView("EMP")
+deptDF.createOrReplaceTempView("DEPT")
+
+joinDF = spark.sql("select * from EMP e, DEPT d where e.emp_dept_id == d.dept_id") \
+  .show(truncate=False)
+
+joinDF2 = spark.sql("select * from EMP e INNER JOIN DEPT d ON e.emp_dept_id == d.dept_id") \
+  .show(truncate=False)
+
+When you need to join more than two tables, you either use SQL expression after creating a temporary view on the DataFrame or use the result of join operation to join 
+with another DataFrame like chaining them. for example
+
+# Join on multiple dataFrames
+df1.join(df2,df1.id1 == df2.id2,"inner") \
+   .join(df3,df1.id1 == df3.id3,"inner")  
+   
+   
+-------------------------------unionByName---------------------------------------------
+PySpark unionByName() is used to union two DataFrames when you have column names in a different order or even 
+if you have missing columns in any DataFrme, in other words, this function
+resolves columns by name (not by position). First, let’s create DataFrames with the different number of columns
+in union() method , column count should match and in union by name no of columns can be diffrent, 
+unionbyname() merges all the columns .
+
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+
+# Create DataFrame df1 with columns name, and id
+data = [("James",34), ("Michael",56), \
+        ("Robert",30), ("Maria",24) ]
+
+df1 = spark.createDataFrame(data = data, schema=["name","id"])
+df1.printSchema()
+
+# Create DataFrame df2 with columns name and id
+data2=[(34,"James"),(45,"Maria"), \
+       (45,"Jen"),(34,"Jeff")]
+
+df2 = spark.createDataFrame(data = data2, schema = ["id","name"])
+df2.printSchema()
+
+# Using unionByName()
+df3 = df1.unionByName(df2)
+df3.printSchema()
+df3.show()
+
+# Using allowMissingColumns
+df1 = spark.createDataFrame([[5, 2, 6]], ["col0", "col1", "col2"])
+df2 = spark.createDataFrame([[6, 7, 3]], ["col1", "col2", "col3"])
+df3 = df1.unionByName(df2, allowMissingColumns=True)
+df3.printSchema()
+df3.show()   
+
+output:- 
+col0 col1 col2 col3
+5     2    6    Null
+Null     6     7     3
+
+
+-------------------------------------------------------------------------------
+df_in = spark.read.format('avro').load(path,header='true',inferSchema='false')
+#df_in.printSchema()
+df_in=df_in.select("data.*").columns
+#df.show(5)
+actual_cols = spark.table(f'{target_sch}.{target_tbl}').columns
+#print('Actual Columns',actual_cols)
+#columns_in_df2=actual_cols.columns.difference(df_in.columns)
+df_in_lower=[item.lower() for item in df_in]
+actual_cols_lower=[item.lower() for item in actual_cols]
+columns_in_df2=list(set(actual_cols_lower)-set(df_in_lower))
+print(columns_in_df2)
+
+
+source='s3://cds-ingest-raw-test/capreporting/oracleint/pharmards/kafka/edpint.prmcyint.PHRMRDSD_O.ACCT_MV/'
+df_in = spark.read.format('avro').load(source,header='true',inferSchema='false')
+df_in=df_in.select("data.*")
+#df_in.printSchema()
+col_remove=['SALES_CONSMR_SEG_CD','SALES_CHNL_CD','CLNT_ACCT_TAX_ID_NUM','ACCT_CUST_SELF_ID_ELCTN_CD','COB_ELCTN_CD']
+df=df_in.drop(*col_remove)
+df.printSchema()
+---------------------------------------------------------------------------
+##Window function
+from pyspark.sql.functions import *
+from pyspark.sql.window import Window
+windowSpec  = Window.partitionBy("department").orderBy(col("salary").desc())
+Or
+windowSpec  = Window.partitionBy("department").orderBy(col("salary"))
+df.withColumn("lag",lag("salary",1).over(windowSpec)).withColumn("lead",lead("salary",1).over(windowSpec)).show()
+ 
+windowSpec  = Window.orderBy(col("salary").desc())
+empDF.withColumn('Rank',dense_rank().over(windowSpec)).show()
+
+
+
+----------------------------------------------------
+https://www.projectpro.io/article/aws-glue-interview-questions-and-answers/761
+https://tutorialsdojo.com/amazon-simple-workflow-swf-vs-aws-step-functions-vs-amazon-sqs/	
