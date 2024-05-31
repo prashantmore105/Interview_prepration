@@ -165,5 +165,17 @@ def lambda_handler(event)
 	glue.update_workflow(name ="wf_nme" ,runpro[perties="" )
 	responce=glue.start_workflow("name")
 	logger.info("started successfully")
+
+--------------------------------------------------------------------------------------------
+15. can aws lambda function runs outside the vpc as well ?
+Yes, AWS Lambda functions can run both inside and outside a Virtual Private Cloud (VPC). When you create a Lambda function, you have the option to configure it to run either inside or outside a VPC, depending on your requirements.
+
+Outside VPC (default): By default, Lambda functions run outside a VPC. When a Lambda function runs outside a VPC, it does not have access to resources within the VPC, such as EC2 instances, RDS databases, or ElastiCache clusters. However, it can still access internet resources and AWS services that are accessible via public endpoints.
+
+Inside VPC: You can configure a Lambda function to run inside a VPC, which allows it to access resources within the VPC, including private subnets and resources with private IP addresses. When you run a Lambda function inside a VPC, it is provisioned with an elastic network interface (ENI) in each subnet specified, enabling it to communicate with resources within the VPC.
+
+Running Lambda functions inside a VPC is often used when the function needs to access private resources securely, without exposing them to the public internet. However, it's essential to consider that running Lambda functions inside a VPC may introduce additional cold start latency and networking complexities, so it should be done judiciously based on the specific requirements of your application.
+
+In summary, AWS Lambda provides the flexibility to run functions both inside and outside a VPC, allowing you to choose the configuration that best meets your security, networking, and performance needs.
 	
 	
