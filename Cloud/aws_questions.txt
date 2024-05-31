@@ -175,7 +175,22 @@ Outside VPC (default): By default, Lambda functions run outside a VPC. When a La
 Inside VPC: You can configure a Lambda function to run inside a VPC, which allows it to access resources within the VPC, including private subnets and resources with private IP addresses. When you run a Lambda function inside a VPC, it is provisioned with an elastic network interface (ENI) in each subnet specified, enabling it to communicate with resources within the VPC.
 
 Running Lambda functions inside a VPC is often used when the function needs to access private resources securely, without exposing them to the public internet. However, it's essential to consider that running Lambda functions inside a VPC may introduce additional cold start latency and networking complexities, so it should be done judiciously based on the specific requirements of your application.
-
 In summary, AWS Lambda provides the flexibility to run functions both inside and outside a VPC, allowing you to choose the configuration that best meets your security, networking, and performance needs.
+--------------------------------------------------------------------------------------------------------------
+16 is s3 bucket inside or outside the vpc ?
+Amazon S3 (Simple Storage Service) buckets are considered outside of Virtual Private Clouds (VPCs) in AWS.
+
+S3 is a fully managed object storage service that is accessible over the public internet. When you create an S3 bucket, it exists outside of any VPC. S3 buckets are globally accessible and do not reside within the network boundaries of a VPC.
+
+While you can access S3 buckets from resources inside a VPC, such as EC2 instances or Lambda functions running inside a VPC, the S3 service itself is not part of the VPC infrastructure.
+
+When accessing S3 from resources within a VPC, you can control access using IAM policies, bucket policies, and VPC endpoints to ensure secure and private communication between your VPC resources and S3 without needing to expose your data to the public internet.
+
+----------------------------------------------------------------------------------------------------------
+
+
+
+
+
 	
 	
