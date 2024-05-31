@@ -41,4 +41,6 @@
 35 pandas library      
 36. some scenario-based questions
 37. in SNS when you send a notification email can you send a table of data into it in the email or logs in the email.
+38. How did you perform TYpe 1 and type 2 ?
+39. Can we do type 1 and type2 on parquet files?
 
