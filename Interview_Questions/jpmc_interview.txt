@@ -1,0 +1,44 @@
+1. Explain the work you have done in the previous project , regarding AWS and Spark. questions around the project
+2.  Design a system with RDS system as input get the data in cloud environment and perform DQ and transformation and get the data ready for analytics
+   and provide the appropriate security.
+3. what is VPC , subnet and security group in detail .
+4. Is Lambda inside the VPC or not ? 
+5. Can lambda would work outside the VPC ? detailed explanation on how lambda works
+6. Is s3 bucket inside the VPC ?
+7. If s3 is global then how data is protected in s3 bucket.? Questions around security of data and over the network data transfer etc
+8. What is streaming ?
+9. Explain Kinesis .. what is storage time of Kinesis Detailed explanation on kinesis .
+10 . Explain Firehose ..difference between kinesis and firehose.
+11. explain SQS Detailed
+12 .Explain  SNS Detailed
+13. Explain SES Detailed
+14 .Comparison between Firehose and SQS ,why should i use firehose 
+15.S3 life cycle 
+16. What is a glue connection .
+17. Inside the glue how do you do resource allocation
+18. explain in detail about G1x , G2x ,G3x and the number of DPU's in each etc
+19. In glue connection ,how it connects securely  and what are the components.
+20.  Write a code for below scenario
+      we have 2 dfs with huge dataset with only one column , i want to generate a third df 
+       with 3 columns col1 from first df , column 2 from second df and third column addition of  first and second dfs columns.
+    once you finish the writing the code questions around the code 
+21. What will the time complexity of the above code and its algorithm.
+22. how is time complexity calculated 
+23. What are the solid principals of Data engineering 
+24. what is ICEBERG  table ?what are the files in the ICEBERG  tables ? how does it works 
+25. Write a code for below scenario 
+    there is one array list with some elements from 0 to 10 find out the 3 elements whose addition is 6 
+     write the detailed code.
+26.Is python pass by value or pass by reference explain in details with example 
+27.are Java and Scala pass by value or pass by reference explain in details, questions with example of coding and methods/list etc  
+28. what are route tables and questions on networking 
+29.What is delta lake ?
+30 what is kafka
+31 what is data mesh   
+32 what is UDF , how to create a UDF , 
+33 how is udf different to already existing spark functions and how does it work.   
+34 what happens underneath when UDF runs and why it is slower .
+35 pandas library      
+36. some scenario-based questions
+37. in SNS when you send a notification email can you send a table of data into it in the email or logs in the email.
+
