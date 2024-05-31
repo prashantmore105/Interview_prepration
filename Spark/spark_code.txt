@@ -161,3 +161,61 @@ unPivotDF = pivotDF.select("Product", expr(unpivotExpr)) \
     .where("Total is not null")
 unPivotDF.show(truncate=False)
 
+-------------------------------------------------------------------------------------------------------------
+i have below two dataframes
+dataframe1 with below data
+
+col1
+1
+2
+3
+
+dataframe2 with below data 
+
+col2
+3
+4
+5
+
+i want output to be below dataframe with 3rd column is addition of 1st and 2nd column 
+
+col1 col2 col3 
+1     3    4
+2     4     6
+3     5    8
+
+ans :-- Use the row_number function to add a sequential ID to each dataframe and join them based on this ID
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+from pyspark.sql.window import Window
+from pyspark.sql.functions import row_number
+
+# Initialize a Spark session
+spark = SparkSession.builder.appName("DataFrame Example").getOrCreate()
+
+# Create the first dataframe
+data1 = [(1,), (2,), (3,)]
+df1 = spark.createDataFrame(data1, ["col1"])
+
+# Create the second dataframe
+data2 = [(3,), (4,), (5,)]
+df2 = spark.createDataFrame(data2, ["col2"])
+
+# Add a row number to each dataframe
+window_spec = Window.orderBy("col1")
+df1 = df1.withColumn("row_id", row_number().over(window_spec))
+
+window_spec2 = Window.orderBy("col2")
+df2 = df2.withColumn("row_id", row_number().over(window_spec2))
+
+# Join the dataframes on the row_id
+df_combined = df1.join(df2, on="row_id").drop("row_id")
+
+# Add the third column which is the sum of the first two columns
+df_result = df_combined.withColumn("col3", col("col1") + col("col2"))
+
+# Show the result
+df_result.show()
+
+
+
