@@ -188,8 +188,6 @@ When accessing S3 from resources within a VPC, you can control access using IAM 
 
 ----------------------------------------------------------------------------------------------------------
 17. if s3 is outside the vpc then how other services access the data in s3 and is data stored in s3 safe and is it exposed to internet for everyone ?
-ChatGPT
-ChatGPT
 Although Amazon S3 (Simple Storage Service) buckets are outside Virtual Private Clouds (VPCs), other AWS services and resources can access data stored in S3 securely without exposing it to the public internet. Here's how it works:
 
 AWS Services Integration: AWS provides built-in integration between S3 and other AWS services. For example, services like AWS Lambda, Amazon EC2, Amazon EMR, Amazon Redshift, and AWS Glue can directly access data stored in S3 without needing to go through the public internet. This integration allows these services to securely read and write data to S3 buckets from within your VPC.
