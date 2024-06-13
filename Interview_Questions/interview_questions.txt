@@ -34,14 +34,7 @@ Imputus Interview Questions: Kranthi Interviewer
 11) How to recover corrupted data in HIVE and how you will handle with downstream systems   -- msck repair table
 12) Spark Query plans. (logical plan and physical plan)
 
-Agile  --DOne
------
-Every 2 weeks is a sprint
-we use JIRA dashboard
-We have story points
-We have implementation stories and analysis stories
-We have retro calls in which scrum master will get feedback from all the team
-we have scrum calls everyday to say the status of the implementation
+
  
 
 
