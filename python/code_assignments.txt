@@ -1,0 +1,19 @@
+####Write a Python program to replace all characters in a list except a given character
+
+def replace_characters(lst, replace_char, except_char):
+    replaced_lst = []
+    for char in lst:
+        if char == except_char:
+            replaced_lst.append(char)
+        else:
+            replaced_lst.append(replace_char)
+    return replaced_lst
+
+# Example usage:
+original_list = ['a', 'b', 'c', 'd', 'e']
+replace_char = '9*'
+except_char = 'c'
+
+new_list = replace_characters(original_list, replace_char, except_char)
+print(new_list)
+#############################################################################################
