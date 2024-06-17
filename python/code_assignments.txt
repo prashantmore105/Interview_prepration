@@ -17,3 +17,35 @@ except_char = 'c'
 new_list = replace_characters(original_list, replace_char, except_char)
 print(new_list)
 #############################################################################################
+ Write a code for below scenario
+      we have 2 dfs with huge dataset with only one column , i want to generate a third df 
+       with 3 columns col1 from first df , column 2 from second df and third column addition of  first and second dfs columns.
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import monotonically_increasing_id, col
+
+# Initialize Spark Session
+spark = SparkSession.builder \
+    .appName("Combine DataFrames") \
+    .getOrCreate()
+
+# Load the DataFrames
+df1 = spark.read.csv("path/to/first_df.csv", header=True, inferSchema=True)
+df2 = spark.read.csv("path/to/second_df.csv", header=True, inferSchema=True)
+
+# Add a unique identifier to each row
+df1 = df1.withColumn("id", monotonically_increasing_id())
+df2 = df2.withColumn("id", monotonically_increasing_id())
+
+# Join the DataFrames on the unique identifier
+joined_df = df1.join(df2, on="id").select(df1["value"].alias("col1"), df2["value"].alias("col2"))
+
+# Add the third column which is the addition of the first and second columns
+result_df = joined_df.withColumn("col3", col("col1") + col("col2"))
+
+# Show the result
+result_df.show()
+
+# Save the result to CSV
+result_df.write.csv("path/to/result_df.csv", header=True)
+
