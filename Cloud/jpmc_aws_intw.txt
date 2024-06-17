@@ -7,43 +7,43 @@
 6. Is s3 bucket inside the VPC ? ans in Cloud/aws_questions.txt
 7. If s3 is global then how data is protected in s3 bucket.? Questions around security of data and over the network data transfer etc {-ans in Cloud/aws_questions.txt
 8. What is streaming ?
-   continuous flow of data generated and processed in real-time or near real-time. This is in contrast to batch processing, where data is    collected, stored, and processed in large chunks at a later time. Streaming enables immediate insights and actions based on the data       as it arrives
+      continuous flow of data generated and processed in real-time or near real-time. This is in contrast to batch processing, where             data          is    collected, stored, and processed in large chunks at a later time. Streaming enables immediate insights and          actions based on the data       as it arrives
 9. Explain Kinesis .. what is storage time of Kinesis Detailed explanation on kinesis .
-Kinesis Data Streams:
-   Amazon Kinesis is a suite of services designed to handle real-time data streaming and processing. It allows you to collect, process, and analyze streaming data so you can get timely insights and react quickly to new information. Here's a detailed explanation of the components and capabilities of Amazon Kinesis:
-   Purpose: Real-time data ingestion and processing.
-   Features:
-   Shards: The basic unit of scalability. Each shard can ingest up to 1 MB of data per second and 1,000 records per second. You can increase or decrease the number of shards in your stream to accommodate your data throughput.
-   Producers: Applications or devices that send data to a stream. Examples include web servers, mobile devices, sensors, and logs.
-   Consumers: Applications that process the data from the stream. These could be AWS Lambda functions, EC2 instances, or Kinesis Data Firehose.
-   Data Retention: Data can be retained in the stream for 24 hours by default, extendable up to 7 days.
-   Use Cases: Real-time log and event data collection, real-time analytics, and data replication.
-   
-Kinesis Data Firehose:
-   
-   Purpose: Load streaming data into data stores and analytics services.
-   Features:
-   Delivery Destinations: Supports Amazon S3, Amazon Redshift, Amazon Elasticsearch Service, and Splunk.
-   Data Transformation: Allows for data transformation using AWS Lambda before delivery.
-   Automatic Scaling: Scales automatically to match the throughput of incoming data.
-   Data Format Conversion: Can convert incoming data to formats such as JSON, CSV, or Parquet.
-   Use Cases: Simplified ETL (Extract, Transform, Load) processes, real-time data analytics, and archiving.
-
-Kinesis Data Analytics:   
-   Purpose: Real-time data processing and analysis using SQL.
-   Features:
-   SQL Queries: Enables you to write SQL queries to process and analyze streaming data.
-   Integration: Can consume data from Kinesis Data Streams and Kinesis Data Firehose.
-   Real-Time Metrics and Alarms: Provides real-time metrics and the ability to set alarms for specific conditions.
-   Use Cases: Real-time analytics, monitoring, and alerting based on streaming data.
-  
-Kinesis Video Streams:
-   Purpose: Ingest, process, and store video streams for analytics and machine learning.
-   Features:
-   Live and On-Demand Video: Supports live streaming and on-demand playback of video.
-   Integration with ML and Analytics: Can integrate with AWS services like Amazon Rekognition for video analysis, AWS Lambda for real-time processing, and more.
-   Data Retention: Configurable retention periods for video data.
-   Use Cases: Security monitoring, live video broadcasting, machine learning inference, and IoT video applications.
+      Kinesis Data Streams:
+         Amazon Kinesis is a suite of services designed to handle real-time data streaming and processing. It allows you to collect,                process, and analyze streaming data so you can get timely insights and react quickly to new information. Here's a detailed             explanation of the components and capabilities of Amazon Kinesis:
+         Purpose: Real-time data ingestion and processing.
+         Features:
+         Shards: The basic unit of scalability. Each shard can ingest up to 1 MB of data per second and 1,000 records per second. You                can increase or decrease the number of shards in your stream to accommodate your data throughput.
+         Producers: Applications or devices that send data to a stream. Examples include web servers, mobile devices, sensors, and logs.
+         Consumers: Applications that process the data from the stream. These could be AWS Lambda functions, EC2 instances, or Kinesis            Data Firehose.
+         Data Retention: Data can be retained in the stream for 24 hours by default, extendable up to 7 days.
+         Use Cases: Real-time log and event data collection, real-time analytics, and data replication.
+         
+      Kinesis Data Firehose:
+         
+         Purpose: Load streaming data into data stores and analytics services.
+         Features:
+         Delivery Destinations: Supports Amazon S3, Amazon Redshift, Amazon Elasticsearch Service, and Splunk.
+         Data Transformation: Allows for data transformation using AWS Lambda before delivery.
+         Automatic Scaling: Scales automatically to match the throughput of incoming data.
+         Data Format Conversion: Can convert incoming data to formats such as JSON, CSV, or Parquet.
+         Use Cases: Simplified ETL (Extract, Transform, Load) processes, real-time data analytics, and archiving.
+      
+      Kinesis Data Analytics:   
+         Purpose: Real-time data processing and analysis using SQL.
+         Features:
+         SQL Queries: Enables you to write SQL queries to process and analyze streaming data.
+         Integration: Can consume data from Kinesis Data Streams and Kinesis Data Firehose.
+         Real-Time Metrics and Alarms: Provides real-time metrics and the ability to set alarms for specific conditions.
+         Use Cases: Real-time analytics, monitoring, and alerting based on streaming data.
+        
+      Kinesis Video Streams:
+         Purpose: Ingest, process, and store video streams for analytics and machine learning.
+         Features:
+         Live and On-Demand Video: Supports live streaming and on-demand playback of video.
+            Integration with ML and Analytics: Can integrate with AWS services like Amazon Rekognition for video analysis, AWS Lambda             for real-time processing, and more.
+         Data Retention: Configurable retention periods for video data.
+         Use Cases: Security monitoring, live video broadcasting, machine learning inference, and IoT video applications.
 10 . Explain Firehose ..difference between kinesis and firehose. see above
 11. explain SQS Detailed
 12 .Explain  SNS Detailed
@@ -53,28 +53,28 @@ Kinesis Video Streams:
 16. What is a glue connection .
 17. Inside the glue how do you do resource allocation :- from resouce allocation dropdown g1x,g2x....
 18. explain in detail about G1x , G2x ,G3x and the number of DPU's in each etc
-      In AWS Glue, the term "G" followed by a number refers to different worker types used for running ETL (Extract, Transform, Load) jobs. Each worker type provides a specific amount of processing power, memory, and disk space. The concept of DPUs (Data Processing Units) is central to understanding the capacity and cost of running AWS Glue jobs. Here's a detailed explanation of the worker types G1.x, G2.x, and G3.x, and their corresponding DPUs:
+      In AWS Glue, the term "G" followed by a number refers to different worker types used for running ETL (Extract, Transform, Load)          jobs. Each worker type provides a specific amount of processing power, memory, and disk space. The concept of DPUs (Data                 Processing Units) is central to understanding the capacity and cost of running AWS Glue jobs. Here's a detailed explanation of the       worker types G1.x, G2.x, and G3.x, and their corresponding DPUs:
    
-   AWS Glue Worker Types and DPUs
-   G1.x Worker Type
-   Purpose: Suitable for general ETL workloads.
-   Compute Resources: Each G1.x worker provides 1 DPU.
-   Memory: Approximately 4 GB of memory per DPU.
-   vCPUs: Approximately 2 vCPUs per DPU.
-   Disk Space: Approximately 50 GB of disk space per DPU.
-   G2.x Worker Type
-   Purpose: Designed for memory-intensive ETL workloads.
-   Compute Resources: Each G2.x worker provides 1 DPU.
-   Memory: Approximately 8 GB of memory per DPU.
-   vCPUs: Approximately 4 vCPUs per DPU.
-   Disk Space: Approximately 50 GB of disk space per DPU.
-   G3.x Worker Type
-   Purpose: Optimized for both compute and memory-intensive ETL workloads.
-   Compute Resources: Each G3.x worker provides 1 DPU.
-   Memory: Approximately 16 GB of memory per DPU.
-   vCPUs: Approximately 4 vCPUs per DPU.
-   Disk Space: Approximately 64 GB of disk space per DPU.
-   In AWS Glue, one DPU (Data Processing Unit) consists of 4 vCPUs and 16 GB of memory. This definition applies to the overall capacity       of DPUs, irrespective of the specific worker types (G1.x, G2.x, G3.x) discussed earlier.
+      AWS Glue Worker Types and DPUs
+      G1.x Worker Type
+         Purpose: Suitable for general ETL workloads.
+         Compute Resources: Each G1.x worker provides 1 DPU.
+         Memory: Approximately 4 GB of memory per DPU.
+         vCPUs: Approximately 2 vCPUs per DPU.
+         Disk Space: Approximately 50 GB of disk space per DPU.
+      G2.x Worker Type
+         Purpose: Designed for memory-intensive ETL workloads.
+         Compute Resources: Each G2.x worker provides 1 DPU.
+         Memory: Approximately 8 GB of memory per DPU.
+         vCPUs: Approximately 4 vCPUs per DPU.
+         Disk Space: Approximately 50 GB of disk space per DPU.
+      G3.x Worker Type
+         Purpose: Optimized for both compute and memory-intensive ETL workloads.
+         Compute Resources: Each G3.x worker provides 1 DPU.
+         Memory: Approximately 16 GB of memory per DPU.
+         vCPUs: Approximately 4 vCPUs per DPU.
+         Disk Space: Approximately 64 GB of disk space per DPU.
+      In AWS Glue, one DPU (Data Processing Unit) consists of 4 vCPUs and 16 GB of memory. This definition applies to the overall                capacity of DPUs, irrespective of the specific worker types (G1.x, G2.x, G3.x) discussed earlier.
 19. In glue connection ,how it connects securely  and what are the components.
     Throught , vpc ,subnet and security groups and jdbc ursl with passowrd stired in secerete managers
 20.  Write a code for below scenario   :- Answer in python/code_assignments.txt
