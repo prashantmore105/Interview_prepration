@@ -113,6 +113,26 @@ more fexibility on big data processing environment using various computing frame
 -- You can convert DynamicFrames to and from DataFrames after you resolve any schema inconsistencies.
 -- main feature is job bookmark and read writr ablity and integration with aws 
 https://aws.amazon.com/blogs/big-data/optimize-memory-management-in-aws-glue/
+Spark DataFrame
+Spark DataFrame is a distributed collection of data organized into named columns, conceptually similar to a table in a relational database or a data frame in R/Python. It is a core abstraction in Apache Spark.
+
+Key Features:
+Schema: Spark DataFrames have a well-defined schema, which means the structure of the data (names, types of columns) is known beforehand.
+APIs: Provides rich APIs in Scala, Java, Python, and R for various data operations.
+Performance: Optimized through Catalyst Optimizer and Tungsten Execution Engine, providing efficient querying and computation.
+Interoperability: Easily integrates with other Spark components like Spark SQL, MLlib, GraphX, and more.
+Transformations and Actions: Supports a wide range of transformations (e.g., map, filter, groupBy) and actions (e.g., collect, saveAsTable).
+
+AWS Glue DynamicFrame
+AWS Glue DynamicFrame is a distributed collection of data that supports a nested data structure and provides advanced features designed specifically for ETL (Extract, Transform, Load) processes. It is part of AWS Glue, a fully managed ETL service.
+
+Key Features:
+Schema Flexibility: Handles semi-structured data with a flexible schema. DynamicFrames do not require a fixed schema and can handle schema changes (e.g., missing or new columns) gracefully.
+AWS Glue Integration: Seamlessly integrates with AWS Glue's Data Catalog, job scheduling, and other ETL functionalities.
+Built-in Transformations: Offers specialized ETL transformations such as applyMapping, resolveChoice, and relationalize that simplify common ETL tasks.
+Error Handling: Provides features to handle errors and missing data without failing the entire job.
+Interoperability: Can be converted to and from Spark DataFrames, allowing you to leverage Spark's powerful processing capabilities when needed.
+
 
 
 12.
