@@ -1,0 +1,316 @@
+package com.citiustech.reconciliation.processor
+
+import java.sql.Timestamp
+
+import org.apache.kudu.spark.kudu.KuduContext
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
+import org.slf4j.LoggerFactory
+import com.citiustech.reconciliation.constants.DRConstants.EXTRACTED_RECORD_COUNT
+import com.citiustech.reconciliation.constants.DRConstants.FINAL_DF_COUNT
+import com.citiustech.reconciliation.constants.DRConstants.INCREMENTAL_COUNT_DELETE
+import com.citiustech.reconciliation.constants.DRConstants.INSERTED_RECORD_COUNT
+import com.citiustech.reconciliation.constants.DRConstants.UPDATED_RECORD_COUNT
+import com.citiustech.reconciliation.constants.DRConstants.DT_OUTPUT_PATH
+import com.citiustech.reconciliation.constants.DRConstants.ORG_CODE
+import com.citiustech.reconciliation.constants.DRConstants.RECONCILIATION_PROPERTIES
+import com.citiustech.reconciliation.constants.DRConstants.SOURCE_CHECKSUM
+import com.citiustech.reconciliation.constants.DRConstants.TYPE1_CHECKSUM_ATTRIBUTES
+import com.citiustech.reconciliation.constants.DRConstants.TYPE2_CHECKSUM_ATTRIBUTES
+import com.citiustech.reconciliation.constants.DRConstants._
+import com.citiustech.reconciliation.extractor.HdfsExtractor
+import com.citiustech.reconciliation.model.AuditClass
+import com.citiustech.reconciliation.utils.DRUtils
+import com.citiustech.reconciliation.utils.PropertyFileReader
+import org.apache.spark.sql.types._
+import com.citiustech.hscale.spark.storage.impl._
+import com.citiustech.hscale.spark.storage.api._
+import com.citiustech.reconciliation.constants.DRConstants
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.functions.{ col, lit, when }
+import org.apache.spark.sql.Row
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
+import org.apache.spark.storage.StorageLevel
+
+trait SCDtypeProcessor {
+
+  def getIncrementalDF(incDF: DataFrame, drMetadata: AuditClass.DRMetadata, incrDFCols: Array[String], kuduCols: Array[String]): DataFrame
+  def getKuduDF(drMetadata: AuditClass.DRMetadata): DataFrame
+  def getFinalDF(commonDataWithChecksum: DataFrame, KuduColumns: Array[String], incDataWithChecksum: DataFrame, drMetadata: AuditClass.DRMetadata, newDataInc: DataFrame): DataFrame
+
+}
+object SCDtypeProcessor {
+  val LOGGER = LoggerFactory.getLogger(SCDtypeProcessor.getClass)
+
+  def apply(scdtype: String): SCDtypeProcessor = {
+
+    //To be moved in property file
+    val classname = PropertyFileReader.getPropertyString(scdtype.toLowerCase(), RECONCILIATION_PROPERTIES)
+
+    LOGGER.info(s"classname: $classname")
+    val handler = Class.forName(s"$classname$$")
+    handler.getField("MODULE$").get(classOf[SCDtypeProcessor]).asInstanceOf[SCDtypeProcessor]
+  }
+
+  def CommonDataProcessing(drMetadata: AuditClass.DRMetadata, kuduContext: KuduContext) = {
+
+    LOGGER.info("kudu context created")
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    val startCommon = System.currentTimeMillis()
+    var readPath = ""
+
+    var path = s"${PropertyFileReader.getPropertyString(DT_OUTPUT_PATH, RECONCILIATION_PROPERTIES)}/${PropertyFileReader.getPropertyString(ORG_CODE, RECONCILIATION_PROPERTIES)}/${drMetadata.sourceTableName.toUpperCase()}/${drMetadata.mappingId}"
+    readPath = path.replaceAll(":", "_").trim()
+    LOGGER.info("Read Path ====> " + readPath)
+    LOGGER.info("****** Validating Reading Path for DR ******* ")
+
+    val fs = FileSystem.get(new Configuration)
+
+    val isValidPath = fs.exists(new Path(readPath))
+
+    if (!isValidPath) {
+
+      LOGGER.info("Please Check Source Path for DR ====> " + readPath)
+      throw new Exception(s"Path Does Not Exists. Please Check Source Path ====>  $readPath and Mapping_Id ====> ${drMetadata.mappingId}")
+
+    }
+
+    try {
+
+      // Getting Kudu data
+      val kuduDF = SCDtypeProcessor(drMetadata.scdType).getKuduDF(drMetadata)
+      val kuduCols = kuduDF.columns
+      val kSchema = kuduDF.schema
+
+      //Getting Incremental Data
+      val incrementalDFTemp = StorageHandler("HDFS").createDataframe(readPath)
+      val incrDFCols = incrementalDFTemp.columns
+
+      val incrementalDF = incrementalDFTemp
+        .select(incrDFCols.map { _.toUpperCase() }.head, incrDFCols.map { _.toUpperCase() }.tail: _*)
+
+      //Flag for DELETE_IND column
+      val deleted = incrDFCols.map(x => x.toUpperCase()).contains("DELETE_IND")
+      LOGGER.info("DELETED Flag ====> " + deleted)
+
+      var incrDF: DataFrame = null
+
+      //Handling DELETE_IND column
+      if (deleted) {
+        incrDF = incrementalDF
+          .withColumn("DELETE_IND", when($"DELETE_IND" === 1, 1).otherwise(0).cast(DataTypes.IntegerType))
+        LOGGER.info("Printing incrDF")
+
+      } else {
+        incrDF = incrementalDF.withColumn("DELETE_IND", lit(0).cast(DataTypes.IntegerType))
+      }
+
+      //Counting process Starts here ====>
+      val incrDFWithDRColumns1: DataFrame = SCDtypeProcessor(drMetadata.scdType).getIncrementalDF(incrDF, drMetadata, incrDFCols, kuduCols)
+
+      var incrDFwithDelete: DataFrame = null
+      var incrDFwithoutDelete: DataFrame = null
+      var incrDFwithDeleteFinal: DataFrame = null
+
+      val incrWithDRCols = incrDFWithDRColumns1.columns
+      LOGGER.info("Printing incrDFWithDRColumns1")
+
+      //****Incremental Deleted data****//
+      incrDFwithDelete = incrDFWithDRColumns1
+        .filter($"DELETE_IND" === 1)
+        .select(kuduCols.map { _.toUpperCase() }.head, kuduCols.map { _.toUpperCase() }.tail: _*)
+
+      incrDFwithoutDelete = incrDFWithDRColumns1
+        .filter($"DELETE_IND" === 0)
+        .select(kuduCols.map { _.toUpperCase() }.head, kuduCols.map { _.toUpperCase() }.tail: _*)
+
+      //Swapping kudu data with incremental NULL data for deleted records
+      if (!kuduDF.rdd.isEmpty() && !incrDFwithDelete.rdd.isEmpty()) {
+
+        val joinCondition1 = DRUtils.getJoinCondition(drMetadata.businessKey, incrDFwithDelete, kuduDF)
+        LOGGER.info("joinCondition1: " + joinCondition1)
+
+        LOGGER.info("********* Handling Delete Flag == 1 from Source  **************")
+        val incSK = s"${kuduCols(0)}_inc"
+        val CURRENT_INDICATOR_inc = s"${CURRENT_INDICATOR}_inc"
+        val CREATE_TS_inc = s"${CREATE_TS}_inc"
+        val UPDATE_TS_inc = s"${UPDATE_TS}_inc"
+        val VALID_FROM_TS_inc = s"${VALID_FROM_TS}_inc"
+        val VALID_TO_TS_inc = s"${VALID_TO_TS}_inc"
+        val TYPE_ONE_CHECKSUM_inc = s"${TYPE_ONE_CHECKSUM}_inc"
+        val TYPE_TWO_CHECKSUM_inc = s"${TYPE_TWO_CHECKSUM}_inc"
+        val BATCH_NUM_inc = s"${BATCH_NUM}_inc"
+
+        //flag for array/bridge column with default value False
+        val array_bridge_flag = spark.conf.get("array_bridge_flag", "False")
+
+        if (array_bridge_flag.equalsIgnoreCase("True")) {
+
+          LOGGER.info("********* Handling Array/Bridge Table for Delete Flag **************")
+          incrDFwithDeleteFinal = incrDFwithDelete.as("inc")
+            .join(kuduDF.as("kudu"), joinCondition1, "inner")
+            .withColumn(s"${CURRENT_INDICATOR_inc}", incrDFwithDelete(CURRENT_INDICATOR))
+            .withColumn(s"${CREATE_TS_inc}", incrDFwithDelete(CREATE_TS))
+            .withColumn(s"${UPDATE_TS_inc}", incrDFwithDelete(UPDATE_TS))
+            .withColumn(s"${VALID_FROM_TS_inc}", incrDFwithDelete(VALID_FROM_TS))
+            .withColumn(s"${VALID_TO_TS_inc}", incrDFwithDelete(VALID_TO_TS))
+            .withColumn(s"${TYPE_ONE_CHECKSUM_inc}", incrDFwithDelete(TYPE_ONE_CHECKSUM))
+            .withColumn(s"${BATCH_NUM_inc}", incrDFwithDelete(BATCH_NUM))
+            .select(col(CURRENT_INDICATOR_inc), col(CREATE_TS_inc), col(UPDATE_TS_inc), col(VALID_FROM_TS_inc), col(VALID_TO_TS_inc), col(TYPE_ONE_CHECKSUM_inc), col(BATCH_NUM_inc), $"kudu.*")
+            .drop(CURRENT_INDICATOR, CREATE_TS, UPDATE_TS, VALID_FROM_TS, VALID_TO_TS, TYPE_ONE_CHECKSUM, BATCH_NUM)
+            .withColumnRenamed(s"${CURRENT_INDICATOR_inc}", CURRENT_INDICATOR)
+            .withColumnRenamed(s"${CREATE_TS_inc}", CREATE_TS)
+            .withColumnRenamed(s"${UPDATE_TS_inc}", UPDATE_TS)
+            .withColumnRenamed(s"${VALID_FROM_TS_inc}", VALID_FROM_TS)
+            .withColumnRenamed(s"${VALID_TO_TS_inc}", VALID_TO_TS)
+            .withColumnRenamed(s"${TYPE_ONE_CHECKSUM_inc}", TYPE_ONE_CHECKSUM)
+            .withColumnRenamed(s"${BATCH_NUM_inc}", BATCH_NUM)
+            .withColumn(DELETE_IND, lit(1).cast(DataTypes.IntegerType))
+            .select(kuduCols.map { _.toUpperCase() }.head, kuduCols.map { _.toUpperCase() }.tail: _*)
+
+        } else {
+
+          incrDFwithDeleteFinal = incrDFwithDelete.as("inc")
+            .join(kuduDF.as("kudu"), joinCondition1, "inner")
+            .withColumn(s"${incSK}", incrDFwithDelete(kuduCols(0)))
+            .withColumn(s"${CURRENT_INDICATOR_inc}", incrDFwithDelete(CURRENT_INDICATOR))
+            .withColumn(s"${CREATE_TS_inc}", incrDFwithDelete(CREATE_TS))
+            .withColumn(s"${UPDATE_TS_inc}", incrDFwithDelete(UPDATE_TS))
+            .withColumn(s"${VALID_FROM_TS_inc}", incrDFwithDelete(VALID_FROM_TS))
+            .withColumn(s"${VALID_TO_TS_inc}", incrDFwithDelete(VALID_TO_TS))
+            .withColumn(s"${TYPE_ONE_CHECKSUM_inc}", incrDFwithDelete(TYPE_ONE_CHECKSUM))
+            .withColumn(s"${BATCH_NUM_inc}", incrDFwithDelete(BATCH_NUM))
+            .select(col(CURRENT_INDICATOR_inc), col(incSK), col(CREATE_TS_inc), col(UPDATE_TS_inc), col(VALID_FROM_TS_inc), col(VALID_TO_TS_inc), col(TYPE_ONE_CHECKSUM_inc), col(BATCH_NUM_inc), $"kudu.*")
+            .drop(s"${kuduCols(0)}")
+            .drop(CURRENT_INDICATOR, CREATE_TS, UPDATE_TS, VALID_FROM_TS, VALID_TO_TS, TYPE_ONE_CHECKSUM, BATCH_NUM)
+            .withColumnRenamed(s"${incSK}", s"${kuduCols(0)}")
+            .withColumnRenamed(s"${CURRENT_INDICATOR_inc}", CURRENT_INDICATOR)
+            .withColumnRenamed(s"${CREATE_TS_inc}", CREATE_TS)
+            .withColumnRenamed(s"${UPDATE_TS_inc}", UPDATE_TS)
+            .withColumnRenamed(s"${VALID_FROM_TS_inc}", VALID_FROM_TS)
+            .withColumnRenamed(s"${VALID_TO_TS_inc}", VALID_TO_TS)
+            .withColumnRenamed(s"${TYPE_ONE_CHECKSUM_inc}", TYPE_ONE_CHECKSUM)
+            .withColumnRenamed(s"${BATCH_NUM_inc}", BATCH_NUM)
+            .withColumn(DELETE_IND, lit(1).cast(DataTypes.IntegerType))
+            .select(kuduCols.map { _.toUpperCase() }.head, kuduCols.map { _.toUpperCase() }.tail: _*)
+        }
+
+      } else {
+
+        LOGGER.info("************ Inside Else Condition ************")
+        incrDFwithDeleteFinal = incrDFwithDelete
+          .select(kuduCols.map { _.toUpperCase() }.head, kuduCols.map { _.toUpperCase() }.tail: _*)
+      }
+
+      val incrDFWithDRColumns = incrDFwithDeleteFinal.union(incrDFwithoutDelete)
+      println("************* incrDFWithDRColumns ****************** ")
+
+      LOGGER.info("************ Partitioning Incr and Kudu DF ************")
+      var partitionExpr = drMetadata.businessKey.split(",").map(x => x.trim()).map(x => col(x))
+
+      val incrDFPartitioned = incrDFWithDRColumns.repartition(partitionExpr: _*)
+      val kuduDFPartitioned = kuduDF.repartition(partitionExpr: _*)
+
+      val joinCondition2 = DRUtils.getJoinCondition(drMetadata.businessKey, incrDFWithDRColumns, kuduDF)
+
+      LOGGER.info("JoinCondition for Inner Join between incrDFWithDRColumns and kuduDF ====> " + joinCondition2)
+
+      val commonDataWithChecksum = incrDFPartitioned.as("inc")
+        .join(kuduDFPartitioned.as("kudu"), joinCondition2, "inner")
+        .select($"kudu.*")
+      commonDataWithChecksum.persist(StorageLevel.MEMORY_AND_DISK_SER)
+      commonDataWithChecksum.count
+
+      val endCommon = System.currentTimeMillis()
+
+      LOGGER.info("Total time to find Common Data between Inc and Kudu ====> " + (endCommon - startCommon) / 1000)
+
+      val deltaRecordsDF = getDeltaRecordsByComparingChecksum(incrDFPartitioned, commonDataWithChecksum, kuduDF.columns, drMetadata, kSchema)
+
+      LOGGER.info("data pre processing - The END")
+
+      deltaRecordsDF
+    } catch {
+      case exception: Exception => {
+        LOGGER.error("Error occurred in CommonDataProcessing() method : " + exception.getMessage)
+        throw exception
+
+      }
+
+    }
+  }
+
+  def getDeltaRecordsByComparingChecksum(incDataWithChecksum: DataFrame, commonDataWithChecksum: DataFrame,
+                                         KuduColumns: Array[String], drMetadata: AuditClass.DRMetadata, kSchema: StructType) = {
+
+    var incKuducommonType1DF: DataFrame = null
+    var incKuducommonType2DF: DataFrame = null
+    val startDelta = System.currentTimeMillis()
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    LOGGER.info("Inside getDeltaRecordsByComparingChecksum")
+
+    try {
+
+      val joinCondition = DRUtils.getJoinCondition(drMetadata.businessKey, incDataWithChecksum, commonDataWithChecksum)
+      LOGGER.info("joinCondition: " + joinCondition)
+
+      val newDataInc = incDataWithChecksum.as("inc")
+        .join(commonDataWithChecksum.as("common"), joinCondition, "leftanti")
+        .filter($"DELETE_IND" === 0)
+        .select($"inc.*")
+        .select(KuduColumns.map { _.toUpperCase() }.head, KuduColumns.map { _.toUpperCase() }.tail: _*)
+      LOGGER.info("noCommonInc")
+
+      val start = System.currentTimeMillis()
+
+      val finalDF = SCDtypeProcessor(drMetadata.scdType).getFinalDF(commonDataWithChecksum, KuduColumns, incDataWithChecksum, drMetadata, newDataInc)
+      commonDataWithChecksum.unpersist()
+
+      val end = System.currentTimeMillis()
+
+      LOGGER.info(s"Total time to create Final DF after Surrogate Key Swapping in Seconds ====> " + (end - start) / 1000)
+
+      val currentTimestamp = new Timestamp(new java.util.Date().getTime())
+      val drMappingAudit = AuditClass.DRMappingAudit(finalDF, "", drMetadata.mappingId, spark.sparkContext.applicationId, "", drMetadata.sourceTableName, " ", " ", " ", currentTimestamp, currentTimestamp, 0, 0.toLong, 0, "sentara", "sentara", currentTimestamp, kSchema, 0, 0, 0, KuduColumns, currentTimestamp)
+
+      drMappingAudit
+    } catch {
+      case exception: Exception => {
+        LOGGER.error("Error occurred in getDeltaRecordsByComparingChecksum() method : " + exception.getMessage)
+        throw exception
+      }
+    }
+  }
+
+  def getCheckSumColumns(drMetadata: AuditClass.DRMetadata, checksumType: String) = {
+
+    LOGGER.info("getColumnNamesToTrack")
+    var skipColumns: Array[String] = Array.empty
+
+    skipColumns = checksumType match {
+
+      case DRConstants.TYPE1 => drMetadata.type1ChecksumAttributes.split(",").map(x => x.trim())
+      case DRConstants.TYPE2 => drMetadata.type2ChecksumAttributes.split(",").map(x => x.trim())
+      case _                 => throw new IllegalArgumentException
+
+    }
+
+    val checksumColumns = skipColumns.map(colName => col(colName))
+
+    checksumColumns
+  }
+
+  // Returns the dataframe with Index to each Row
+  def dfZipWithIndex(df: DataFrame, colName: String): DataFrame = {
+
+    df.sqlContext.createDataFrame(
+      df.rdd.zipWithIndex().map(indexRow => Row.fromSeq(indexRow._1.toSeq ++ Seq(indexRow._2 + 1))), StructType(df.schema.fields ++ Array(StructField(colName, LongType, true))))
+  }
+
+}

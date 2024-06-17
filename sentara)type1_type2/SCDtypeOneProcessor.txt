@@ -1,0 +1,185 @@
+package com.citiustech.reconciliation.processor
+
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.Row
+import org.slf4j.LoggerFactory
+import org.apache.spark.sql.functions._
+import com.citiustech.reconciliation.model.AuditClass
+import java.text.SimpleDateFormat
+import java.util.Date
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.SparkSession
+import com.citiustech.reconciliation.constants.DRConstants.EXTRACTED_RECORD_COUNT
+import org.apache.kudu.spark.kudu._
+import org.apache.kudu.client._
+import com.citiustech.reconciliation.constants.DRConstants._
+import com.citiustech.reconciliation.config.KuduConfig
+import com.citiustech.reconciliation.utils.DRUtils
+
+import com.citiustech.hscale.spark.storage.impl._
+import com.citiustech.hscale.spark.storage.api._
+import com.citiustech.reconciliation.utils.PropertyFileReader
+import com.citiustech.reconciliation.constants.DRConstants
+
+object SCDtypeOneProcessor extends SCDtypeProcessor {
+
+  val LOGGER = LoggerFactory.getLogger(SCDtypeOneProcessor.getClass)
+
+  def getIncrementalDF(incDF: DataFrame, drMetadata: AuditClass.DRMetadata, incrDFCols: Array[String], kuduCols: Array[String]): DataFrame = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    val checksumType = DRConstants.TYPE1
+    val batchNum = spark.conf.get(BATCH_NUM)
+    val scdType = drMetadata.scdType.trim()
+    val type1Column = drMetadata.type2DateColumn
+
+    // Flag for array/bridge table with default value False
+    val array_bridge_flag = spark.conf.get("array_bridge_flag", "False")
+    val current_ts = spark.conf.get(CURR_TS)
+
+    LOGGER.info("Array/Bridge Table Flag ====> " + array_bridge_flag)
+    LOGGER.info("current_ts in getIncrementalDF ====> " + current_ts)
+
+    try {
+
+      //Type1 read - reading latest records for same business key
+      LOGGER.info("****** Type1 read - reading latest records for same business key *****")
+      var incrDF_type1: DataFrame = null
+      var df_type1: DataFrame = null
+
+      var bkList = drMetadata.businessKey.split(",").map(x => x.trim())
+
+      val duplicateCols = bkList.+:(drMetadata.lmdColumn)
+
+      val filterFlag = incDF.groupBy(bkList.head, bkList.tail: _*).count().where('count > 1).rdd.isEmpty()
+
+      LOGGER.info("Getting Incremental DF for Type 1 :: filterFlag ====> " + !filterFlag)
+
+      if (!filterFlag) {
+
+        LOGGER.info("Dropping Duplicate Rows from Data based on Business Key and LMD Column")
+
+        val cleanedIncDf = incDF.dropDuplicates(duplicateCols.head, duplicateCols.tail: _*)
+        val wspec_update = Window.partitionBy(bkList.head, bkList.tail: _*).orderBy(to_date(col(drMetadata.lmdColumn), SIMPLE_DATE_FORMAT_TS).desc)
+        val df_ranked = cleanedIncDf.withColumn("denseRank", dense_rank().over(wspec_update))
+        df_type1 = df_ranked.where("denseRank=1").toDF().drop("denseRank")
+      } else {
+        df_type1 = incDF
+      }
+
+      LOGGER.info("scdType Type ====> " + scdType)
+      LOGGER.info("Batch_Number ====> " + batchNum)
+
+      //****Adding Common HouseKeeping Columns****
+      val commanIncDF = df_type1.withColumn(CURRENT_INDICATOR, lit(1).cast(DataTypes.IntegerType))
+        .withColumn(CREATE_TS, lit(current_ts).cast(DataTypes.TimestampType)) // This will be changed later to Kudu value
+        .withColumn(UPDATE_TS, lit(current_ts).cast(DataTypes.TimestampType))
+        .withColumn(BATCH_NUM, lit(batchNum))
+        .withColumn(VALID_FROM_TS, col(type1Column))
+        .withColumn(VALID_TO_TS, lit(current_ts).cast(DataTypes.TimestampType))
+        .withColumn(TYPE_ONE_CHECKSUM, hash(SCDtypeProcessor.getCheckSumColumns(drMetadata, checksumType): _*).cast(LongType))
+        .withColumn(TYPE_TWO_CHECKSUM, lit(0).cast(LongType))
+
+      //Adding Surrogate key column based on type of table
+      if (array_bridge_flag.equalsIgnoreCase("True")) {
+
+        LOGGER.info("*** Inside Array/Bridge table DF Generation ***")
+        incrDF_type1 = commanIncDF
+
+      } else {
+
+        LOGGER.info("*** Inside Type1 table DF Generation ***")
+        val dfWithIndex = SCDtypeProcessor.dfZipWithIndex(commanIncDF, "Index")
+        incrDF_type1 = dfWithIndex
+          .select($"*", concat($"Index", lit("_"), lit(new SimpleDateFormat(TS_SURROGATE_KEY).format(new Date()))) as s"${drMetadata.surrogateKey}").drop($"Index")
+      }
+
+      val incrDFWithDRColumns1 = incrDF_type1.select(kuduCols.map { _.toUpperCase() }.head, kuduCols.map { _.toUpperCase() }.tail: _*)
+
+      incrDFWithDRColumns1
+
+    } catch {
+      case exception: Exception => {
+        LOGGER.error("Error occurred in getIncrementalDF() method : " + exception.getMessage)
+        throw new Exception("Error occurred in getIncrementalDF() method : " + exception.getMessage, exception.getCause)
+      }
+    }
+
+  }
+
+  def getFinalDF(commonDataWithChecksum: DataFrame, KuduColumns: Array[String], incDataWithChecksum: DataFrame, drMetadata: AuditClass.DRMetadata, newDataInc: DataFrame): DataFrame = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    val current_ts = spark.conf.get(CURR_TS)
+    println("current_ts in getFinalDF ====> " + current_ts)
+
+    try {
+      val joinCondition = DRUtils.getJoinCondition(drMetadata.businessKey, commonDataWithChecksum, incDataWithChecksum)
+      println("joinCondition: " + joinCondition)
+
+      //Incremental common data for Type 1
+      val incKuducommonType1DF = incDataWithChecksum.as("inc")
+        .join(commonDataWithChecksum.as("common"), joinCondition, "inner")
+        .filter(commonDataWithChecksum(TYPE_ONE_CHECKSUM) !== incDataWithChecksum(TYPE_ONE_CHECKSUM))
+        .select($"inc.*")
+        .select(KuduColumns.map { _.toUpperCase() }.head, KuduColumns.map { _.toUpperCase() }.tail: _*)
+
+      val IncDFToUpdate = newDataInc.union(incKuducommonType1DF)
+
+      //Kudu common data for Type 1
+      val kuduDataNoMatch = incDataWithChecksum.as("inc")
+        .join(commonDataWithChecksum.as("kudu"), joinCondition, "inner")
+        .filter(commonDataWithChecksum(TYPE_ONE_CHECKSUM) !== incDataWithChecksum(TYPE_ONE_CHECKSUM))
+        .select($"kudu.*")
+        .select(KuduColumns.map { _.toLowerCase() }.head, KuduColumns.map { _.toLowerCase() }.tail: _*).distinct
+
+      val incSK = s"${KuduColumns(0)}_inc"
+      val kuduCreateTS = s"${CREATE_TS}_inc"
+      val kuduValidTs = s"${VALID_FROM_TS}_inc"
+
+      //****Swapping Surrogate Key and Create TS Columns *****
+      val finalDF = IncDFToUpdate.as("IncDFToUpdate").join(kuduDataNoMatch.as("kudu"), joinCondition, "left")
+        .withColumn(s"${incSK}", when(kuduDataNoMatch(KuduColumns(0)).isNull, IncDFToUpdate(KuduColumns(0))).otherwise(kuduDataNoMatch(KuduColumns(0))))
+        .withColumn(s"${kuduCreateTS}", when(kuduDataNoMatch(CREATE_TS).isNull, IncDFToUpdate(CREATE_TS)).otherwise(kuduDataNoMatch(CREATE_TS)))
+        .withColumn(s"${kuduValidTs}", when(kuduDataNoMatch(VALID_FROM_TS).isNull, IncDFToUpdate(VALID_FROM_TS)).otherwise(kuduDataNoMatch(VALID_FROM_TS)))
+        .select(col(incSK), col(kuduCreateTS), col(kuduValidTs), $"IncDFToUpdate.*")
+        .drop(s"${KuduColumns(0)}", CREATE_TS, VALID_FROM_TS)
+        .withColumnRenamed(s"${incSK}", s"${KuduColumns(0)}")
+        .withColumnRenamed(s"${kuduCreateTS}", CREATE_TS)
+        .withColumnRenamed(s"${kuduValidTs}", VALID_FROM_TS)
+        .withColumn(UPDATE_TS, lit(current_ts).cast(DataTypes.TimestampType))
+        .withColumn(VALID_TO_TS, when(col("DELETE_IND") === 1, lit(current_ts).cast(DataTypes.TimestampType)).otherwise(FUTURE_DATE_PLUS_ONE).cast(DataTypes.TimestampType))
+        .select(KuduColumns.map { _.toLowerCase() }.head, KuduColumns.map { _.toLowerCase() }.tail: _*)
+
+      finalDF
+
+    } catch {
+
+      case exception: Exception => {
+        LOGGER.error("Error occurred in getFinelDF() method : " + exception.getMessage)
+        throw new Exception("Error occured in getFinelDF() method : " + exception.getMessage, exception.getCause)
+      }
+
+    }
+  }
+  def getKuduDF(drMetadata: AuditClass.DRMetadata): DataFrame = {
+
+    val destinationTableName = drMetadata.destinationTableName
+    println("destinationTableName:: " + destinationTableName)
+    try {
+      val kuduDF = StorageHandler(PropertyFileReader.getPropertyString(STORAGE_KEY, "spark-data-recon.properties")).createDataframe(destinationTableName, null, null, "DELETE_IND=0", null)
+
+      kuduDF
+    } catch {
+
+      case exception: Exception => {
+        LOGGER.error("Error occurred in getKuduDF() method : " + exception.getMessage)
+        throw new Exception("Error occured in getKuduDF()  method: " + exception.getMessage, exception.getCause)
+      }
+    }
+  }
+
+}

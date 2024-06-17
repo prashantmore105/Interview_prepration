@@ -1,0 +1,144 @@
+package com.citiustech.reconciliation.processor
+
+import com.citiustech.reconciliation.model.AuditClass
+import org.apache.spark.sql.SparkSession
+import org.apache.kudu.spark.kudu.KuduContext
+import org.slf4j.LoggerFactory
+import com.citiustech.reconciliation.utils.PropertyFileReader
+import com.citiustech.hscale.spark.storage.api._
+import com.citiustech.reconciliation.constants.DRConstants._
+import com.citiustech.reconciliation.config.KuduConfig
+import com.citiustech.reconciliation.utils.DRUtils
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions.{ col, lit, when }
+import org.apache.spark.sql.types._
+import com.citiustech.reconciliation.dao.AuditLogDAO
+import org.joda.time.DateTime
+import java.sql.Timestamp
+import org.apache.spark.sql.functions._
+
+object SCDRelativeTypeProcessor {
+
+  val LOGGER = LoggerFactory.getLogger(SCDRelativeTypeProcessor.getClass)
+  val spark = SparkSession.builder().getOrCreate()
+  import spark.implicits._
+
+  def executeRelativeMethod(drMetadata: AuditClass.DRMetadata, targetDF: DataFrame, kuduCols: Array[String], mappingId: String, tableName: String) = {
+
+    val relativeProcessEntityList = drMetadata.relativeProcessEntities.split(",").map(x => x.trim())
+
+    try {
+
+      LOGGER.info("*****Inside Relative Method*****")
+
+      if (!relativeProcessEntityList.isEmpty) {
+
+        val RelativeRecords = targetDF
+          .select(kuduCols(0), DELETE_IND, VALID_TO_TS, CURRENT_INDICATOR, UPDATE_TS)
+
+        val DeleteRecords = RelativeRecords
+          .filter($"DELETE_IND" === 1)
+
+        val TypeTwoRecords = RelativeRecords
+          .filter($"CURRENT_IND" === 0)
+
+        relativeProcessEntityList.foreach {
+          relativeDeleteEntityListValue =>
+
+            val relativeTableName = relativeDeleteEntityListValue.toLowerCase().trim
+            LOGGER.info("******Relative Process Started for: " + relativeTableName)
+
+            val relativeTargetKuduDF = StorageHandler(PropertyFileReader.getPropertyString(STORAGE_KEY, "spark-data-recon.properties")).createDataframe(relativeTableName, null, null, "CURRENT_IND=1 & DELETE_IND=0", null)
+
+            LOGGER.info("relativeTargetKuduDF Created")
+
+            if (!relativeTargetKuduDF.rdd.isEmpty()) {
+
+              val kuduRelativeCols = relativeTargetKuduDF.columns
+
+              val relativeKuduDB = PropertyFileReader.getPropertyString(KUDU_DB, RECONCILIATION_PROPERTIES).trim
+              LOGGER.info("kuduDB" + relativeKuduDB)
+
+              val relativeTargetPath = s"impala::$relativeKuduDB.$relativeTableName"
+              LOGGER.info("relativeKuduTarget" + relativeTargetPath)
+
+              if (!DeleteRecords.rdd.isEmpty()) {
+
+                val relativeDeleteOutput = relativeProcessingMethod(drMetadata, relativeTargetKuduDF, DeleteRecords, relativeTargetPath, kuduRelativeCols)
+                LOGGER.info("Relative Delete Process Completed for: " + relativeTableName)
+
+              } else {
+                LOGGER.info("No records to delete in Relative Entities.")
+              }
+              if (!TypeTwoRecords.rdd.isEmpty()) {
+
+                val relativeDeleteOutput = relativeProcessingMethod(drMetadata, relativeTargetKuduDF, TypeTwoRecords, relativeTargetPath, kuduRelativeCols)
+                LOGGER.info("Relative Type Two Process Completed for: " + relativeTableName)
+              } else {
+                LOGGER.info("No records for Type Two in Relative Entities.")
+              }
+
+            } else {
+              LOGGER.info("No active records in " + relativeTableName + " or No records present in " + relativeTableName + ".")
+            }
+        }
+      } else {
+        LOGGER.info("No Relative Entities present in DR Metadata table for Destination Table: " + drMetadata.destinationTableName)
+      }
+
+    } catch {
+      case e: NullPointerException => {
+        LOGGER.info("******* Inside ExecuteRelativeMethod Class NP Exception  ******** ")
+        val error_desc = s"DR process Completed for $tableName. Failed in executeRelativeMethod method of Relative Process for mapping Id= $mappingId, NULL value found"
+
+        AuditLogDAO.updateFailedDRMappingAudit(STATUS_FAILED, error_desc)
+        AuditLogDAO.updateBatchStatusDetails(STATUS_FAILED, error_desc)
+        AuditLogDAO.updateFailedDRMappingExecStatus(STATUS_FAILED, error_desc)
+
+        throw new Exception(error_desc)
+      }
+      case exception: Exception => {
+        LOGGER.error(s"DR process Completed for $tableName. Error occurred in Relative Process: " + exception.getMessage)
+        var error_desc = s"DR SCD Type Process Completed for $tableName, Failed in executeRelativeMethod method of Relative Process for mapping id = $mappingId" + exception.getMessage
+
+        AuditLogDAO.updateFailedDRMappingAudit(STATUS_FAILED, error_desc)
+        AuditLogDAO.updateBatchStatusDetails(STATUS_FAILED, error_desc)
+        AuditLogDAO.updateFailedDRMappingExecStatus(STATUS_FAILED, error_desc)
+
+        throw new Exception(error_desc + exception.getMessage, exception.getCause)
+      }
+    }
+  }
+  def relativeProcessingMethod(drMetadata: AuditClass.DRMetadata, relativeKuduDF: DataFrame, RelativeRecords: DataFrame, relativeTargetPath: String, kuduRelativeCols: Array[String]) = {
+    LOGGER.info("*****Inside Relative Method*****")
+
+    val joinCondition = DRUtils.getJoinCondition(drMetadata.surrogateKey, RelativeRecords, relativeKuduDF)
+    LOGGER.info("*****joinCondition******" + joinCondition)
+
+    val CURRENT_INDICATOR_inc = s"${CURRENT_INDICATOR}_inc"
+    LOGGER.info("CURRENT_INDICATOR_inc======>" + CURRENT_INDICATOR_inc)
+    val VALID_TO_TS_inc = s"${VALID_TO_TS}_inc"
+    LOGGER.info("VALID_TO_TS_inc======>" + VALID_TO_TS_inc)
+    val UPDATE_TS_inc = s"${UPDATE_TS}_inc"
+    LOGGER.info("UPDATE_TS_inc======>" + UPDATE_TS_inc)
+    val DELETE_IND_inc = s"${DELETE_IND}_inc"
+    LOGGER.info("DELETE_IND_inc======>" + DELETE_IND_inc)
+
+    val relativeDF = RelativeRecords.as("inc")
+      .join(relativeKuduDF.as("kudu"), joinCondition, "inner")
+      .withColumn(s"${VALID_TO_TS_inc}", RelativeRecords(VALID_TO_TS))
+      .withColumn(s"${CURRENT_INDICATOR_inc}", RelativeRecords(CURRENT_INDICATOR))
+      .withColumn(s"${DELETE_IND_inc}", RelativeRecords(DELETE_IND))
+      .withColumn(s"${UPDATE_TS_inc}", RelativeRecords(UPDATE_TS))
+      .select(col(VALID_TO_TS_inc), col(CURRENT_INDICATOR_inc), col(DELETE_IND_inc), col(UPDATE_TS_inc), $"kudu.*")
+      .drop(CURRENT_INDICATOR, VALID_TO_TS, DELETE_IND, UPDATE_TS)
+      .withColumnRenamed(s"${VALID_TO_TS_inc}", VALID_TO_TS)
+      .withColumnRenamed(s"${CURRENT_INDICATOR_inc}", CURRENT_INDICATOR)
+      .withColumnRenamed(s"${DELETE_IND_inc}", DELETE_IND)
+      .withColumnRenamed(s"${UPDATE_TS_inc}", UPDATE_TS)
+      .select(kuduRelativeCols.map { _.toLowerCase() }.head, kuduRelativeCols.map { _.toLowerCase() }.tail: _*)
+
+    StorageHandler(PropertyFileReader.getPropertyString(STORAGE_KEY, "spark-data-recon.properties")).saveDataframe(relativeDF, relativeTargetPath)
+  }
+
+}
