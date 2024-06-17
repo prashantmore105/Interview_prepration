@@ -77,13 +77,43 @@ Kinesis Video Streams:
    In AWS Glue, one DPU (Data Processing Unit) consists of 4 vCPUs and 16 GB of memory. This definition applies to the overall capacity       of DPUs, irrespective of the specific worker types (G1.x, G2.x, G3.x) discussed earlier.
 19. In glue connection ,how it connects securely  and what are the components.
     Throught , vpc ,subnet and security groups and jdbc ursl with passowrd stired in secerete managers
-20.  Write a code for below scenario
+20.  Write a code for below scenario   :- Answer in python/code_assignments.txt
       we have 2 dfs with huge dataset with only one column , i want to generate a third df 
        with 3 columns col1 from first df , column 2 from second df and third column addition of  first and second dfs columns.
     once you finish the writing the code questions around the code 
 21. What will the time complexity of the above code and its algorithm.
 22. how is time complexity calculated 
 23. What are the solid principals of Data engineering 
+   The SOLID principles are fundamental design principles in software development that aim to make software designs more understandable, flexible, and maintainable. While they are typically associated with object-oriented programming, many of these principles can be applied to data engineering practices as well. Here's how each SOLID principle can be interpreted in the context of data engineering:
+   
+Single Responsibility Principle (SRP):
+   
+   Principle: A class (or module, component) should have only one reason to change.
+   Application in Data Engineering: Data pipelines and components should be designed to handle a specific responsibility or task. For       example, a data ingestion module should focus solely on ingesting data without also handling transformations or loading operations.       This principle helps in maintaining clarity and reducing complexity in data workflows.
+  
+Open/Closed Principle (OCP):
+   
+   Principle: Software entities (classes, modules, functions) should be open for extension but closed for modification.
+   Application in Data Engineering: Data processing workflows should be designed to allow for new functionality (extensions) to be added    without modifying existing code. This can be achieved through modularization and using configuration-driven approaches where             possible, enabling easier scalability and evolution of data pipelines.
+  
+Liskov Substitution Principle (LSP):
+   
+   Principle: Objects of a superclass should be replaceable with objects of its subclasses without affecting the correctness of the program.
+   Application in Data Engineering: In the context of data structures or formats, adhering to consistent schemas and interfaces allows different data sources or formats to be seamlessly integrated or replaced within data pipelines. This ensures interoperability and avoids unexpected behavior during data processing.
+   Interface Segregation Principle (ISP):
+   
+   Principle: Clients should not be forced to depend on interfaces they do not use. Instead of one fat interface, many small interfaces are preferred.
+   Application in Data Engineering: Data processing components should expose specific interfaces tailored to their functionalities. For example, a data transformation module should expose methods or interfaces relevant to transformation operations, while a data loading module should expose methods for data loading tasks. This principle promotes modularity and reduces the impact of changes by minimizing dependencies.
+   Dependency Inversion Principle (DIP):
+   
+   Principle: High-level modules should not depend on low-level modules. Both should depend on abstractions (interfaces). Abstractions should not depend on details. Details should depend on abstractions.
+   Application in Data Engineering: Data engineering pipelines should rely on abstract interfaces or contracts rather than specific implementations. For instance, decoupling data processing logic from the underlying storage or compute infrastructure allows for easier migration to different platforms or technologies. This principle supports flexibility, scalability, and maintainability in data engineering architectures.
+   Benefits of Applying SOLID Principles in Data Engineering
+   Maintainability: Enhances the readability and understandability of data pipelines, making it easier to maintain and modify.
+   Scalability: Facilitates the addition of new features or functionality without major changes to existing components.
+   Flexibility: Promotes modular design, allowing components to be reused and replaced as needed.
+   Testability: Encourages the development of components that are easier to test in isolation, improving overall system reliability.
+   By applying SOLID principles in data engineering practices, teams can build robust, adaptable, and maintainable data pipelines and       systems that effectively meet business requirements and evolve with changing data needs.
 24. what is ICEBERG  table ?what are the files in the ICEBERG  tables ? how does it works 
 25. Write a code for below scenario 
     there is one array list with some elements from 0 to 10 find out the 3 elements whose addition is 6 
