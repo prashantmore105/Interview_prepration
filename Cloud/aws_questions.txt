@@ -140,14 +140,16 @@ aws
 ---------
 >S3 storage capcity  5 TB
 >S3 by default files can be store 1000, aws support but in total 5 TB
->Lambda 15 duration after that timeout> small logics
+>Lambda 15 mins duration after that timeout > used to handle small logics (parameter passing , launching glue job , trigger jobs based on file arrival on s3 bucket)
 >Lambda layer to  add libraries or dependent packages
 >event bridge for scheduling
->cross account> trust relation need be updated
+>cross account replication > trust relation need be updated
 >glue default 48 hours after timeout
->crwaler to scan s3 data and table in catalog
->clssifiers data format identification
->athena we can create table without any s3 location in athena all are external tables
+>crwaler to scan s3 data and create /update table in catalog
+>Classifiers are used to define data format identification
+AWS Glue classifiers are used to determine the schema of your data sources during the ETL process. When you define a data source for an AWS Glue job, classifiers help Glue understand the format and structure of the data, so it can properly catalog and transform the data.
+
+>athena we can not create table without any s3 location in athena all are external tables ,no internal tables.
 >workflow is for define logical steps of the jobs >crawler, glue job
 >through trigger we can add crawler or glue job
 >emr bigdata ware house platform in emr 
@@ -155,7 +157,7 @@ aws
 
 13 . glue read and write df code
 --read
-df_all = glueContext.create_dynamic_frame.from_catalog(database=raw_catalogue_db_name,
+datasource0 = glueContext.create_dynamic_frame.from_catalog(database=raw_catalogue_db_name,
                                                        table_name=table_with_source,
                                                        push_down_predicate=f"(year >= '{predicate_year}')",
                                                        transformation_ctx="datasource0").toDF() 
