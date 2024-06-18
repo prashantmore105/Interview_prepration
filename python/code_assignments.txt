@@ -16,6 +16,14 @@ except_char = 'c'
 
 new_list = replace_characters(original_list, replace_char, except_char)
 print(new_list)
+-----another way using eneumator 
+for index,value in enumerate(original_list):
+    if value != except_char :
+       original_list[index] = replace_char
+
+print(original_list)
+
+
 #############################################################################################
  Write a code for below scenario
       we have 2 dfs with huge dataset with only one column , i want to generate a third df 
