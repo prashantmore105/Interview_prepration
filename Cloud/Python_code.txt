@@ -117,6 +117,12 @@ def isPelimdrome(s):
         return False
         
 print(isPelimdrome('madam'))
+----------------------------------------------------------------------
+str1='2madam1'
+str2=''
+for i in str1:
+    str2=i+str2
+print(str2)
 
 ------------------------------------------------
 duplicate values in list ------
